@@ -6,7 +6,7 @@
           v-for="index in 6"
           :key="`stack-${index}`"
           :ref="registerStackRef"
-          class="absolute left-1/2 top-1/2 h-32 w-24 -translate-x-1/2 -translate-y-1/2 rounded-[1.35rem] border border-white/10 bg-[linear-gradient(145deg,_rgba(3,12,28,0.98),_rgba(7,18,34,0.98))] shadow-[0_10px_30px_rgba(2,8,18,0.45)] will-change-transform sm:h-36 sm:w-28"
+          class="absolute left-1/2 top-1/2 h-32 w-24 -translate-x-1/2 -translate-y-1/2 rounded-[1.35rem] border border-white/10 bg-[linear-gradient(180deg,_rgba(18,28,46,0.96),_rgba(10,15,27,0.98))] shadow-[0_12px_24px_rgba(2,6,23,0.22)] will-change-transform sm:h-36 sm:w-28"
         />
       </div>
     </div>
@@ -23,7 +23,7 @@
       v-for="card in flightCards"
       :key="card.id"
       :ref="registerFlightRef"
-      class="absolute left-1/2 top-1/2 h-28 w-20 -translate-x-1/2 -translate-y-1/2 rounded-[1.15rem] border border-white/10 bg-[linear-gradient(145deg,_rgba(4,12,28,0.98),_rgba(9,22,40,0.98))] shadow-[0_16px_34px_rgba(2,8,18,0.45)] opacity-0 will-change-transform sm:h-32 sm:w-24"
+      class="absolute left-1/2 top-1/2 h-28 w-20 -translate-x-1/2 -translate-y-1/2 rounded-[1.15rem] border border-white/10 bg-[linear-gradient(180deg,_rgba(18,28,46,0.96),_rgba(10,15,27,0.98))] shadow-[0_16px_28px_rgba(2,6,23,0.18)] opacity-0 will-change-transform sm:h-32 sm:w-24"
     >
       <div class="flex h-full items-end rounded-[inherit] bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.08),_transparent_42%)] p-3">
         <span class="pill !border-white/10 !bg-white/5 !px-2 !py-0.5 !text-[10px] !tracking-[0.3em]">Knowem</span>

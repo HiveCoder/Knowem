@@ -18,6 +18,7 @@
           :subtitle="card.subtitle"
           :tone="card.tone"
           :revealed="card.revealed"
+          :selected="hoveredIndex === index"
           :flip-key="flipKey"
           :size="compact ? 'sm' : 'md'"
           :back-label="card.backLabel || 'Hidden card'"
@@ -65,8 +66,8 @@ function cardStyle(index: number, hovered: boolean) {
   const spread = props.compact ? 24 : 34
   const offset = (index - (total - 1) / 2) * spread
   const baseRotation = (index - (total - 1) / 2) * 10
-  const lift = hovered ? -20 : 0
-  const scale = hovered ? 1.05 : 1
+  const lift = hovered ? -26 : 0
+  const scale = hovered ? 1.075 : 1
 
   return {
     transform: `translateX(calc(-50% + ${offset}px)) translateY(${lift}px) rotate(${baseRotation}deg) scale(${scale})`,
