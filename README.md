@@ -16,11 +16,15 @@ The frontend expects a public Vite environment variable:
 VITE_SOCKET_URL=https://your-backend-url.example.com
 ```
 
+For local production validation, copy [.env.production.example](c:/Users/asust/Downloads/Knowem/.env.production.example) to `.env.production.local` and replace the placeholder with your hosted backend URL.
+
 ### Vercel Settings
 
 - Build command: `npm run build`
 - Output directory: `dist`
 - Environment variable: `VITE_SOCKET_URL`
+
+Production builds now fail fast if `VITE_SOCKET_URL` is missing, so Vercel will block a broken frontend deploy instead of shipping a runtime connection error.
 
 SPA refresh support is handled by [vercel.json](vercel.json).
 
@@ -100,6 +104,8 @@ Example:
 ```bash
 VITE_SOCKET_URL=https://knowem-realtime-backend.onrender.com
 ```
+
+To verify before pushing, set the same value in `.env.production.local` and run `npm run build` locally.
 
 ### Vercel Dashboard Values
 
