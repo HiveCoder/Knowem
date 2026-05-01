@@ -19,6 +19,10 @@
       {{ game.latestError }}
     </div>
 
+    <div v-if="game.connectionState !== 'connected'" class="rounded-2xl border border-amber-400/20 bg-amber-400/10 px-4 py-3 text-sm text-amber-100">
+      {{ game.backendStatusMessage || 'Realtime backend is reconnecting.' }}
+    </div>
+
     <div v-if="!room.game.started" class="grid gap-5 xl:grid-cols-[1.3fr_0.7fr]">
       <RoomLobby
         :room="room"
@@ -67,9 +71,10 @@
       <span class="pill">Reconnect</span>
       <h1 class="mt-4 font-display text-3xl text-white">Join room {{ roomCode }}</h1>
       <p class="mt-3 text-sm text-slate-400">If you opened an invite link directly, enter the room password if required and reconnect with your stored username.</p>
+      <p v-if="game.backendStatusMessage" class="mt-3 text-sm text-amber-200">{{ game.backendStatusMessage }}</p>
       <div class="mt-6 space-y-4">
         <input v-model="password" class="input-shell" type="password" placeholder="Room password (optional)" />
-        <button class="action-button w-full bg-cyan-400 text-slate-950 hover:bg-cyan-300" :disabled="!session.hasUsername" @click="rejoinRoom">
+        <button class="action-button w-full bg-cyan-400 text-slate-950 hover:bg-cyan-300" :disabled="!session.hasUsername || !game.isBackendReachable" @click="rejoinRoom">
           Join room
         </button>
       </div>

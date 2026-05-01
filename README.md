@@ -1,80 +1,164 @@
 # Knowem
 
-Knowem is a realtime social party game scaffold built with Vue 3, Vite, TypeScript, TailwindCSS, Pinia, VueUse Motion, Express, and Socket.io.
+Knowem is a Vue 3 + Vite + TypeScript multiplayer party card game with a static frontend prepared for Vercel and a separately hosted Socket.io backend.
 
-## Stack
+## Architecture
 
-- Frontend: Vue 3 + Vite + TypeScript
-- Styling: TailwindCSS
-- Motion: @vueuse/motion
-- Icons-ready UI scaffold: lucide-vue-next
-- State: Pinia
-- Backend: Node.js + Express + Socket.io
-- Shared contracts: TypeScript types in `shared/`
+- Frontend: `src/` builds to `dist/` and is safe to deploy as a static SPA on Vercel.
+- Backend: `server/` contains the Express + Socket.io realtime server, game engine, and socket handlers for Render, Railway, or another Node host.
+- Shared contracts: `shared/` contains TypeScript types used by both sides.
 
-## Features Included
+## Frontend Deployment
 
-- Username-only temporary session identity stored in local storage
-- Room create/join flow with room code and optional password
-- Lobby with connected players, ready state, host start control, and invite link
-- Realtime game table with phases:
-	- waiting
-	- question reveal
-	- answer phase
-	- judging phase
-	- results
-- Hidden role cards:
-	- Truth
-	- False
-	- Forced Truth
-	- Counter
-- Adjudicator rotation, score tracking, round recap modal, and chat with optional DMs
-- Shared frontend/backend game types for room and player state
+The frontend expects a public Vite environment variable:
 
-## Scripts
+```bash
+VITE_SOCKET_URL=https://your-backend-url.example.com
+```
 
-- `npm install`
-- `npm run dev` to start Vite and the Socket.io server together
-- `npm run build` to run Vue typecheck, frontend build, and server TypeScript build
-- `npm run start` to run the compiled backend from `dist-server/`
+### Vercel Settings
+
+- Build command: `npm run build`
+- Output directory: `dist`
+- Environment variable: `VITE_SOCKET_URL`
+
+SPA refresh support is handled by [vercel.json](vercel.json).
+
+## Backend Deployment
+
+The backend is intended to be hosted separately from Vercel.
+
+### Required Environment Variables
+
+```bash
+PORT=3001
+CORS_ORIGIN=https://your-vercel-app.vercel.app
+```
+
+`CORS_ORIGIN` accepts a comma-separated list of allowed frontend origins.
+
+### Backend Commands
+
+- Development: `npm run dev:server`
+- Build: `npm run build:server`
+- Start: `npm run start:server`
+
+### Deploy Backend First
+
+You need the backend deployed before configuring Vercel, because the frontend depends on the hosted Socket.io URL.
+
+#### Option A: Render
+
+This repo includes [render.yaml](render.yaml), so you can use Render Blueprint or create a Web Service manually.
+
+Manual settings:
+
+- Runtime: `Node`
+- Build command: `npm install && npm run build:server`
+- Start command: `npm run start:server`
+- Health check path: `/health`
+
+Environment variables:
+
+- `PORT`: leave Render default or set explicitly
+- `CORS_ORIGIN`: `https://your-vercel-app.vercel.app`
+
+After deploy, copy the public backend URL, for example:
+
+```bash
+https://knowem-realtime-backend.onrender.com
+```
+
+#### Option B: Railway
+
+This repo includes [railway.json](railway.json).
+
+Recommended Railway setup:
+
+- Deploy from this repo root
+- Build command: automatic via Nixpacks
+- Start command: `npm run start:server`
+- Health check path: `/health`
+
+Environment variables:
+
+- `PORT`: Railway usually injects this automatically
+- `CORS_ORIGIN`: `https://your-vercel-app.vercel.app`
+
+After deploy, copy the generated HTTPS backend URL.
+
+## Vercel Frontend Setup
+
+Once the backend is live, set the frontend environment variable in Vercel:
+
+```bash
+VITE_SOCKET_URL=https://your-backend-url.example.com
+```
+
+Example:
+
+```bash
+VITE_SOCKET_URL=https://knowem-realtime-backend.onrender.com
+```
+
+### Vercel Dashboard Values
+
+- Framework preset: `Vite`
+- Build command: `npm run build`
+- Output directory: `dist`
+- Environment variable: `VITE_SOCKET_URL`
+
+## Recommended Deployment Order
+
+1. Deploy the backend to Render or Railway.
+2. Set `CORS_ORIGIN` on the backend to your Vercel frontend domain.
+3. Copy the backend HTTPS URL.
+4. Add `VITE_SOCKET_URL` in Vercel using that backend URL.
+5. Deploy the frontend on Vercel.
+6. Verify `/health` on the backend and a room create/join flow in the frontend.
+
+## Local Development
+
+```bash
+npm install
+npm run dev
+```
+
+For local frontend-to-backend communication, the socket service falls back to `http://localhost:3001` only in development when `VITE_SOCKET_URL` is not set.
 
 ## Project Layout
 
 ```text
 .
-├─ server/            # Express + Socket.io server and room/game engine
-├─ shared/            # Shared TypeScript contracts
+├─ server/
+│  ├─ gameEngine.ts
+│  ├─ index.ts
+│  └─ socketHandlers.ts
+├─ shared/
 ├─ src/
-│  ├─ assets/         # Mock question dataset
-│  ├─ components/     # Lobby, table, cards, modals, chat, scoreboard
-│  ├─ services/       # Socket client
-│  ├─ stores/         # Pinia session and game state
-│  ├─ types/          # Frontend re-exports for shared contracts
-│  └─ views/          # Home and room screens
-└─ README.md
+│  ├─ components/
+│  ├─ services/
+│  ├─ stores/
+│  └─ views/
+├─ vercel.json
+└─ .env.example
 ```
 
-## Socket Events
+## Realtime Notes
 
-Inbound and outbound room flow is centered around:
+- The frontend socket client uses `import.meta.env.VITE_SOCKET_URL`.
+- Reconnect handling and fallback UI are built into the Pinia game store.
+- The app surfaces backend-unreachable and reconnect states in the UI before players enter a room and while they are in-game.
 
-- `join_room`
-- `leave_room`
-- `start_game`
-- `deal_cards`
-- `submit_answer`
-- `adjudicator_vote`
-- `next_round`
+## Build Scripts
 
-Additional sync events:
+- `npm run build`: frontend-only Vercel-safe build
+- `npm run build:server`: backend TypeScript build
+- `npm run build:full`: both frontend and backend builds
 
-- `room_state`
-- `private_state`
-- `chat_message`
-- `room_error`
+## Operational Notes
 
-## Notes
-
-- Voice rooms are not implemented in this scaffold yet.
-- Counter cards are represented in state and UI, with room for extending full wild-card negation rules.
-- Turn timers are displayed from server timestamps, but phase expiry is still host-driven rather than automatic.
+- Vercel does not host the Socket.io server for this app.
+- Use an HTTPS backend URL in `VITE_SOCKET_URL`; Socket.io will upgrade appropriately for secure deployments.
+- Keep secrets out of the frontend. Only `VITE_` public variables should be exposed to Vercel.
+- For multiple frontend domains, set `CORS_ORIGIN` as a comma-separated list.

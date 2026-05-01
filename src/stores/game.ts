@@ -1,6 +1,6 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
-import { getSocket } from '@/services/socket'
+import { getSocket, getSocketUrl } from '@/services/socket'
 import type {
   AdjudicatorVotePayload,
   BotDifficulty,
@@ -13,16 +13,30 @@ import type {
   UpdateBotSettingsPayload,
 } from '@/types/game'
 
+type ConnectionState = 'connecting' | 'connected' | 'reconnecting' | 'offline'
+
 export const useGameStore = defineStore('game', () => {
-  const socket = getSocket()
+  let socket = null as ReturnType<typeof getSocket> | null
   const room = ref<RoomState | null>(null)
   const privateState = ref<PrivateState | null>(null)
   const roomCode = ref('')
   const playerId = ref('')
   const latestError = ref('')
   const lastDealtAt = ref(0)
+  const connectionState = ref<ConnectionState>('connecting')
+  const reconnectNotice = ref('')
+  const backendStatusMessage = ref('')
+  const backendUrl = ref(getSocketUrl())
 
-  if (!socket.hasListeners('room_state')) {
+  try {
+    socket = getSocket()
+  } catch (error) {
+    connectionState.value = 'offline'
+    backendStatusMessage.value = error instanceof Error ? error.message : 'Unable to initialize realtime connection.'
+    latestError.value = backendStatusMessage.value
+  }
+
+  if (socket && !socket.hasListeners('room_state')) {
     socket.on('joined_room', ({ roomCode: joinedRoomCode, playerId: joinedPlayerId }) => {
       roomCode.value = joinedRoomCode
       playerId.value = joinedPlayerId
@@ -44,6 +58,35 @@ export const useGameStore = defineStore('game', () => {
       latestError.value = message
     })
 
+    socket.on('connect', () => {
+      connectionState.value = 'connected'
+      backendStatusMessage.value = ''
+    })
+
+    socket.on('disconnect', (reason: string) => {
+      connectionState.value = reason === 'io client disconnect' ? 'offline' : 'reconnecting'
+      backendStatusMessage.value =
+        reason === 'io client disconnect'
+          ? 'Realtime connection closed.'
+          : 'Realtime backend disconnected. Attempting to reconnect.'
+    })
+
+    socket.on('connect_error', () => {
+      connectionState.value = 'reconnecting'
+      backendStatusMessage.value = `Live backend unreachable${backendUrl.value ? ` at ${backendUrl.value}` : ''}.`
+    })
+
+    socket.io.on('reconnect_attempt', () => {
+      connectionState.value = 'reconnecting'
+      backendStatusMessage.value = 'Reconnecting to live backend...'
+    })
+
+    socket.io.on('reconnect', () => {
+      connectionState.value = 'connected'
+      backendStatusMessage.value = ''
+      reconnectNotice.value = 'Reconnected to the live backend.'
+    })
+
     socket.on('chat_message', (message: ChatMessage) => {
       if (!room.value) {
         return
@@ -57,6 +100,8 @@ export const useGameStore = defineStore('game', () => {
 
   const self = computed(() => room.value?.players.find((entry) => entry.id === playerId.value) ?? null)
   const isHost = computed(() => room.value?.hostId === playerId.value)
+  const isBackendReachable = computed(() => connectionState.value !== 'offline')
+  const isConnecting = computed(() => connectionState.value === 'connecting' || connectionState.value === 'reconnecting')
   const canStart = computed(() => {
     if (!room.value || !isHost.value) {
       return false
@@ -69,20 +114,36 @@ export const useGameStore = defineStore('game', () => {
     latestError.value = ''
   }
 
+  function clearReconnectNotice() {
+    reconnectNotice.value = ''
+  }
+
+  function withSocket(action: (instance: NonNullable<typeof socket>) => void) {
+    if (!socket) {
+      latestError.value = backendStatusMessage.value || 'Realtime backend is unavailable.'
+      return
+    }
+    action(socket)
+  }
+
   function createRoom(payload: JoinRoomPayload) {
     clearError()
-    socket.emit('join_room', {
-      ...payload,
-      roomCode: payload.roomCode.toUpperCase(),
-      create: true,
+    withSocket((instance) => {
+      instance.emit('join_room', {
+        ...payload,
+        roomCode: payload.roomCode.toUpperCase(),
+        create: true,
+      })
     })
   }
 
   function joinRoom(payload: JoinRoomPayload) {
     clearError()
-    socket.emit('join_room', {
-      ...payload,
-      roomCode: payload.roomCode.toUpperCase(),
+    withSocket((instance) => {
+      instance.emit('join_room', {
+        ...payload,
+        roomCode: payload.roomCode.toUpperCase(),
+      })
     })
   }
 
@@ -90,7 +151,9 @@ export const useGameStore = defineStore('game', () => {
     if (!roomCode.value) {
       return
     }
-    socket.emit('leave_room', { roomCode: roomCode.value })
+    withSocket((instance) => {
+      instance.emit('leave_room', { roomCode: roomCode.value })
+    })
     room.value = null
     privateState.value = null
     roomCode.value = ''
@@ -101,28 +164,36 @@ export const useGameStore = defineStore('game', () => {
     if (!roomCode.value) {
       return
     }
-    socket.emit('toggle_ready', { roomCode: roomCode.value })
+    withSocket((instance) => {
+      instance.emit('toggle_ready', { roomCode: roomCode.value })
+    })
   }
 
   function startGame() {
     if (!roomCode.value) {
       return
     }
-    socket.emit('start_game', { roomCode: roomCode.value })
+    withSocket((instance) => {
+      instance.emit('start_game', { roomCode: roomCode.value })
+    })
   }
 
   function addBot() {
     if (!roomCode.value) {
       return
     }
-    socket.emit('add_bot', { roomCode: roomCode.value })
+    withSocket((instance) => {
+      instance.emit('add_bot', { roomCode: roomCode.value })
+    })
   }
 
   function autofillBots() {
     if (!roomCode.value) {
       return
     }
-    socket.emit('autofill_bots', { roomCode: roomCode.value })
+    withSocket((instance) => {
+      instance.emit('autofill_bots', { roomCode: roomCode.value })
+    })
   }
 
   function updateBotSettings(settings: { difficulty?: BotDifficulty; targetPlayerCount?: number; allowBotDirectMessages?: boolean }) {
@@ -133,7 +204,9 @@ export const useGameStore = defineStore('game', () => {
       roomCode: roomCode.value,
       ...settings,
     }
-    socket.emit('update_bot_settings', payload)
+    withSocket((instance) => {
+      instance.emit('update_bot_settings', payload)
+    })
   }
 
   function submitAnswer(answer: string) {
@@ -144,7 +217,9 @@ export const useGameStore = defineStore('game', () => {
       roomCode: roomCode.value,
       answer,
     }
-    socket.emit('submit_answer', payload)
+    withSocket((instance) => {
+      instance.emit('submit_answer', payload)
+    })
   }
 
   function submitVote(guesses: Record<string, 'truth' | 'false'>) {
@@ -155,14 +230,18 @@ export const useGameStore = defineStore('game', () => {
       roomCode: roomCode.value,
       guesses,
     }
-    socket.emit('adjudicator_vote', payload)
+    withSocket((instance) => {
+      instance.emit('adjudicator_vote', payload)
+    })
   }
 
   function nextRound() {
     if (!roomCode.value) {
       return
     }
-    socket.emit('next_round', { roomCode: roomCode.value })
+    withSocket((instance) => {
+      instance.emit('next_round', { roomCode: roomCode.value })
+    })
   }
 
   function sendChatMessage(message: string, toPlayerId?: string) {
@@ -174,7 +253,9 @@ export const useGameStore = defineStore('game', () => {
       message,
       toPlayerId,
     }
-    socket.emit('chat_message', payload)
+    withSocket((instance) => {
+      instance.emit('chat_message', payload)
+    })
   }
 
   return {
@@ -184,6 +265,12 @@ export const useGameStore = defineStore('game', () => {
     playerId,
     self,
     isHost,
+    isBackendReachable,
+    isConnecting,
+    connectionState,
+    backendStatusMessage,
+    backendUrl,
+    reconnectNotice,
     canStart,
     latestError,
     lastDealtAt,
@@ -200,5 +287,6 @@ export const useGameStore = defineStore('game', () => {
     nextRound,
     sendChatMessage,
     clearError,
+    clearReconnectNotice,
   }
 })

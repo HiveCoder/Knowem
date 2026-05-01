@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: knowem-realtime-backend
+    runtime: node
+    plan: free
+    rootDir: .
+    buildCommand: npm install && npm run build:server
+    startCommand: npm run start:server
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: PORT
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false

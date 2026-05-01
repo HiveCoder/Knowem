@@ -7,6 +7,18 @@ export default defineConfig({
   server: {
     port: 5173,
   },
+  build: {
+    outDir: 'dist',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vue: ['vue', 'vue-router', 'pinia', '@vueuse/motion'],
+          realtime: ['socket.io-client'],
+          animation: ['gsap'],
+        },
+      },
+    },
+  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),

@@ -18,8 +18,18 @@
       </div>
 
       <div class="flex flex-wrap gap-4">
-        <button class="action-button bg-cyan-400 text-slate-950 hover:bg-cyan-300" @click="createOpen = true">Create room</button>
-        <button class="action-button border border-white/10 bg-white/5 text-white hover:bg-white/10" @click="joinOpen = true">Join room</button>
+        <button class="action-button bg-cyan-400 text-slate-950 hover:bg-cyan-300" :disabled="!game.isBackendReachable" @click="createOpen = true">Create room</button>
+        <button class="action-button border border-white/10 bg-white/5 text-white hover:bg-white/10" :disabled="!game.isBackendReachable" @click="joinOpen = true">Join room</button>
+      </div>
+
+      <div v-if="!game.isBackendReachable || game.isConnecting" class="glass-panel max-w-xl p-5 sm:p-6">
+        <p class="text-sm uppercase tracking-[0.28em] text-slate-500">Connection</p>
+        <h3 class="mt-3 font-display text-2xl text-white">
+          {{ game.isConnecting ? 'Connecting to realtime backend...' : 'Realtime backend unavailable' }}
+        </h3>
+        <p class="mt-3 text-sm text-slate-300">
+          {{ game.backendStatusMessage || `Set VITE_SOCKET_URL to your hosted Socket.io backend before deploying to Vercel.` }}
+        </p>
       </div>
 
       <div class="grid gap-4 sm:grid-cols-3">
