@@ -54,17 +54,17 @@ const innerRef = ref<HTMLElement | null>(null)
 const sizeClass = computed(() => (props.size === 'sm' ? 'h-28 w-20 sm:h-32 sm:w-24' : 'h-40 w-28 sm:h-44 sm:w-32'))
 const frontToneClass = computed(() => {
   if (props.tone === 'truth') {
-    return 'text-cyan-100 shadow-[0_12px_40px_rgba(14,185,207,0.22)]'
+    return 'text-blue-100 shadow-[0_14px_32px_rgba(59,130,246,0.16)]'
   }
   if (props.tone === 'false') {
-    return 'text-coral-100 shadow-[0_12px_40px_rgba(255,93,82,0.24)]'
+    return 'text-rose-100 shadow-[0_14px_32px_rgba(244,63,94,0.16)]'
   }
   if (props.tone === 'wild') {
-    return 'text-gold-100 shadow-[0_12px_40px_rgba(230,185,61,0.24)]'
+    return 'text-violet-100 shadow-[0_14px_32px_rgba(167,139,250,0.16)]'
   }
-  return 'text-slate-100 shadow-[0_12px_30px_rgba(5,8,22,0.32)]'
+  return 'text-slate-100 shadow-[0_14px_30px_rgba(15,23,42,0.24)]'
 })
-const backToneClass = computed(() => (props.tone === 'false' ? 'text-coral-200' : props.tone === 'wild' ? 'text-gold-200' : 'text-cyan-200'))
+const backToneClass = computed(() => (props.tone === 'false' ? 'text-rose-200' : props.tone === 'wild' ? 'text-violet-200' : 'text-blue-200'))
 
 async function animateFlip() {
   await nextTick()
@@ -93,6 +93,11 @@ onMounted(() => {
 <style scoped>
 .card-shell {
   perspective: 1200px;
+  transition: transform 180ms ease;
+}
+
+.card-shell:hover {
+  transform: translateY(-2px) scale(1.01);
 }
 
 .card-inner {
@@ -115,6 +120,6 @@ onMounted(() => {
 
 .card-back,
 .card-front {
-  box-shadow: 0 18px 40px rgba(2, 8, 18, 0.45);
+  box-shadow: 0 18px 36px rgba(2, 6, 23, 0.22);
 }
 </style>

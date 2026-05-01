@@ -1,48 +1,33 @@
 <template>
-  <section class="glass-panel p-5 sm:p-6">
+  <UiPanel padding="lg">
     <div class="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
       <div>
-        <span class="pill">Lobby</span>
-        <h2 class="mt-4 font-display text-3xl text-white">{{ room.name }}</h2>
-        <p class="mt-2 max-w-2xl text-sm text-slate-300">
-          Invite friends with code <span class="font-semibold text-cyan-300">{{ room.code }}</span> and get everyone ready before the host starts the first round.
+        <UiBadge tone="accent">Lobby</UiBadge>
+        <h2 class="mt-4 text-3xl font-semibold tracking-tight text-white">{{ room.name }}</h2>
+        <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
+          Invite friends with code <span class="font-semibold text-blue-300">{{ room.code }}</span> and get everyone ready before the host starts the first round.
         </p>
         <p class="mt-2 text-sm text-slate-500">
           Running solo works too. Add bots to fill the table and the server will play their turns automatically.
         </p>
       </div>
       <div class="grid gap-3 sm:grid-cols-2 lg:w-[560px]">
-        <button
-          class="action-button bg-white text-slate-950 hover:bg-slate-200"
-          @click="$emit('toggleReady')"
-        >
+        <UiButton variant="primary" @click="$emit('toggleReady')">
           {{ selfPlayer?.ready ? 'Unready' : 'Ready up' }}
-        </button>
-        <button
-          class="action-button border border-white/10 bg-white/5 text-white hover:bg-white/10"
-          :disabled="!canAddBot"
-          @click="$emit('addBot')"
-        >
+        </UiButton>
+        <UiButton variant="secondary" :disabled="!canAddBot" @click="$emit('addBot')">
           Add bot
-        </button>
-        <button
-          class="action-button border border-white/10 bg-white/5 text-white hover:bg-white/10"
-          :disabled="!canAddBot"
-          @click="$emit('autofillBots')"
-        >
+        </UiButton>
+        <UiButton variant="secondary" :disabled="!canAddBot" @click="$emit('autofillBots')">
           Auto-fill table
-        </button>
-        <button
-          class="action-button bg-cyan-400 text-slate-950 hover:bg-cyan-300"
-          :disabled="!canStart"
-          @click="$emit('startGame')"
-        >
+        </UiButton>
+        <UiButton variant="secondary" :disabled="!canStart" @click="$emit('startGame')">
           Start game
-        </button>
+        </UiButton>
       </div>
     </div>
 
-    <div class="mt-6 grid gap-4 rounded-3xl border border-white/10 bg-slate-950/40 p-4 lg:grid-cols-2">
+    <div class="mt-6 grid gap-4 rounded-[28px] border border-white/10 bg-[rgba(12,19,35,0.78)] p-4 lg:grid-cols-2">
       <label class="space-y-2">
         <span class="text-xs uppercase tracking-[0.24em] text-slate-500">Bot difficulty</span>
         <select class="input-shell" :value="room.botSettings.difficulty" @change="handleDifficultyChange">
@@ -60,38 +45,41 @@
       <label class="space-y-2 lg:col-span-2">
         <span class="text-xs uppercase tracking-[0.24em] text-slate-500">Bot DM policy</span>
         <button
-          class="flex w-full items-center justify-between rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3 text-left text-sm text-white transition hover:border-cyan-400/40"
+          class="flex w-full items-center justify-between rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3 text-left text-sm text-white transition hover:border-[rgba(124,156,255,0.36)]"
           type="button"
           @click="toggleBotDms"
         >
           <span>{{ room.botSettings.allowBotDirectMessages ? 'Bots can DM players' : 'Bots stay in room chat only' }}</span>
-          <span class="pill !px-2 !py-0.5">{{ room.botSettings.allowBotDirectMessages ? 'on' : 'off' }}</span>
+          <UiBadge tone="muted">{{ room.botSettings.allowBotDirectMessages ? 'on' : 'off' }}</UiBadge>
         </button>
       </label>
-      <div class="rounded-2xl border border-cyan-400/15 bg-cyan-400/8 p-4 lg:col-span-2">
-        <p class="text-xs uppercase tracking-[0.24em] text-cyan-300">Difficulty hint</p>
+      <div class="rounded-2xl border border-[rgba(124,156,255,0.16)] bg-[rgba(124,156,255,0.08)] p-4 lg:col-span-2">
+        <p class="text-xs uppercase tracking-[0.24em] text-blue-300">Difficulty hint</p>
         <p class="mt-2 text-sm text-slate-200">{{ difficultyHint }}</p>
       </div>
     </div>
 
     <div class="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-      <div v-for="player in room.players" :key="player.id" class="rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-3">
+      <div v-for="player in room.players" :key="player.id" class="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
         <div class="flex items-center justify-between gap-3">
           <div>
             <p class="font-medium text-white">{{ player.username }}</p>
             <p class="text-xs uppercase tracking-[0.24em] text-slate-500">{{ player.connected ? 'online' : 'offline' }}</p>
           </div>
-          <span class="pill" :class="player.ready ? '!border-cyan-400/30 !text-cyan-300' : '!text-slate-500'">
+          <UiBadge :tone="player.ready ? 'accent' : 'muted'">
             {{ player.ready ? 'ready' : 'waiting' }}
-          </span>
+          </UiBadge>
         </div>
       </div>
     </div>
-  </section>
+  </UiPanel>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import UiBadge from '@/components/ui/UiBadge.vue'
+import UiButton from '@/components/ui/UiButton.vue'
+import UiPanel from '@/components/ui/UiPanel.vue'
 import type { BotDifficulty, RoomState } from '@/types/game'
 
 const props = defineProps<{

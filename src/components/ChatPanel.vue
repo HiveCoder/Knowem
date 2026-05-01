@@ -1,18 +1,21 @@
 <template>
-  <section class="glass-panel flex h-full flex-col p-4 sm:p-5">
-    <div class="flex items-center justify-between">
-      <h3 class="font-display text-lg text-white">Chat</h3>
-      <span class="pill">{{ allowBotDirectMessages ? 'Room + bot DM' : 'Room chat only' }}</span>
+  <UiPanel class="flex h-full flex-col" padding="sm">
+    <div class="flex items-center justify-between gap-3">
+      <div>
+        <p class="text-xs uppercase tracking-[0.24em] text-slate-500">Conversation</p>
+        <h3 class="mt-2 text-lg font-semibold text-white">Chat</h3>
+      </div>
+      <UiBadge tone="muted">{{ allowBotDirectMessages ? 'Room + bot DM' : 'Room chat only' }}</UiBadge>
     </div>
     <p class="mt-3 text-xs uppercase tracking-[0.24em] text-slate-500">
       {{ allowBotDirectMessages ? 'Bots may whisper back when they feel like it.' : 'Bots are limited to public room chat in this lobby.' }}
     </p>
 
-    <div class="mt-4 flex-1 space-y-3 overflow-y-auto pr-1">
+    <div class="soft-scrollbar mt-4 flex-1 space-y-3 overflow-y-auto pr-1">
       <div
         v-for="message in visibleMessages"
         :key="message.id"
-        class="rounded-2xl border border-white/10 bg-slate-950/50 px-3 py-2"
+        class="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-3"
       >
         <div class="flex items-center justify-between gap-3 text-xs uppercase tracking-[0.2em] text-slate-500">
           <span>{{ message.fromUsername }}</span>
@@ -30,15 +33,18 @@
         <option v-for="player in dmOptions" :key="player.id" :value="player.id">Direct: {{ player.username }}</option>
       </select>
       <textarea v-model="draft" rows="3" class="input-shell resize-none" placeholder="Drop a clue, bluff, or side-eye..."></textarea>
-      <button class="action-button w-full bg-cyan-400 text-slate-950 hover:bg-cyan-300" :disabled="!draft.trim()">
+      <UiButton variant="primary" block type="submit" :disabled="!draft.trim()">
         Send message
-      </button>
+      </UiButton>
     </form>
-  </section>
+  </UiPanel>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import UiBadge from '@/components/ui/UiBadge.vue'
+import UiButton from '@/components/ui/UiButton.vue'
+import UiPanel from '@/components/ui/UiPanel.vue'
 import type { ChatMessage, PublicPlayer } from '@/types/game'
 
 const props = defineProps<{
