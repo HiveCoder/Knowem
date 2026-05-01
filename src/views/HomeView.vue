@@ -22,6 +22,19 @@
         <button class="action-button border border-white/10 bg-white/5 text-white hover:bg-white/10" :disabled="!game.isBackendReachable" @click="joinOpen = true">Join room</button>
       </div>
 
+      <div v-if="!game.hasRealtimeConfig" class="glass-panel max-w-2xl border border-amber-400/20 bg-amber-400/10 p-5 sm:p-6">
+        <p class="text-sm uppercase tracking-[0.28em] text-amber-200/80">Deployment setup required</p>
+        <h3 class="mt-3 font-display text-2xl text-white">Realtime is disabled until Vercel knows your backend URL.</h3>
+        <p class="mt-3 text-sm leading-6 text-slate-200">
+          Set <span class="font-semibold text-white">VITE_SOCKET_URL</span> in Vercel to your deployed backend HTTPS origin, then make sure the backend
+          <span class="font-semibold text-white">CORS_ORIGIN</span> includes your Vercel frontend domain.
+        </p>
+        <div class="mt-4 rounded-2xl border border-white/10 bg-slate-950/40 p-4 text-sm text-slate-300">
+          <p><span class="font-semibold text-white">Vercel:</span> <span class="font-mono">VITE_SOCKET_URL=https://your-backend-host.example.com</span></p>
+          <p class="mt-2"><span class="font-semibold text-white">Backend:</span> <span class="font-mono">CORS_ORIGIN=https://your-app.vercel.app</span></p>
+        </div>
+      </div>
+
       <div v-if="!game.isBackendReachable || game.isConnecting" class="glass-panel max-w-xl p-5 sm:p-6">
         <p class="text-sm uppercase tracking-[0.28em] text-slate-500">Connection</p>
         <h3 class="mt-3 font-display text-2xl text-white">

@@ -27,7 +27,7 @@ const io = new Server(httpServer, {
 const engine = new GameEngine()
 registerSocketHandlers(io, engine)
 
-const port = Number(process.env.PORT || 3001)
+const port = Number(process.env.PORT || 3000)
 httpServer.listen(port, () => {
   console.log(`Knowem server listening on http://localhost:${port}`)
 })

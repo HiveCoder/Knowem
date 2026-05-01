@@ -1,15 +1,8 @@
-import { defineConfig, loadEnv } from 'vite'
+import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { fileURLToPath, URL } from 'node:url'
 
-export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), '')
-
-  if (mode === 'production' && !env.VITE_SOCKET_URL?.trim()) {
-    throw new Error('Missing VITE_SOCKET_URL for production build. Set it in Vercel or in a local .env.production.local file before deploying the frontend.')
-  }
-
-  return {
+export default defineConfig({
     plugins: [vue()],
     server: {
       port: 5173,
@@ -32,5 +25,4 @@ export default defineConfig(({ mode }) => {
         '@shared': fileURLToPath(new URL('./shared', import.meta.url)),
       },
     },
-  }
 })

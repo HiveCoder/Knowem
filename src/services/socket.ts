@@ -1,28 +1,14 @@
 import { io, type Socket } from 'socket.io-client'
 
-let socket: Socket | null = null
+const configuredSocketUrl = import.meta.env.VITE_SOCKET_URL?.trim()
+export const SOCKET_URL = configuredSocketUrl || (import.meta.env.DEV ? 'http://localhost:3000' : '')
 
-export function getSocketUrl() {
-  const configuredUrl = import.meta.env.VITE_SOCKET_URL?.trim()
-  if (configuredUrl) {
-    return configuredUrl
-  }
+const missingSocketUrlWarning = 'VITE_SOCKET_URL is not configured. Realtime features are disabled until you provide the hosted Socket.io backend URL in Vercel.'
 
-  if (import.meta.env.DEV) {
-    return 'http://localhost:3001'
-  }
+let warningLogged = false
 
-  return ''
-}
-
-export function getSocket() {
-  const socketUrl = getSocketUrl()
-  if (!socketUrl) {
-    throw new Error('Missing VITE_SOCKET_URL. Configure the hosted Socket.io backend URL before deploying the frontend.')
-  }
-
-  if (!socket) {
-    socket = io(socketUrl, {
+export const socket: Socket | null = SOCKET_URL
+  ? io(SOCKET_URL, {
       autoConnect: false,
       reconnection: true,
       reconnectionAttempts: Infinity,
@@ -32,6 +18,33 @@ export function getSocket() {
       timeout: 8000,
       transports: ['websocket', 'polling'],
     })
+  : null
+
+export function getSocketUrl() {
+  return SOCKET_URL
+}
+
+export function getSocketWarning() {
+  if (!SOCKET_URL && import.meta.env.PROD) {
+    return missingSocketUrlWarning
+  }
+
+  if (!configuredSocketUrl && import.meta.env.DEV) {
+    return 'VITE_SOCKET_URL is not set. Using the local development fallback at http://localhost:3000.'
+  }
+
+  return ''
+}
+
+export function getSocket() {
+  const warning = getSocketWarning()
+  if (warning && !warningLogged) {
+    console.warn(warning)
+    warningLogged = true
+  }
+
+  if (!socket) {
+    return null
   }
 
   if (!socket.connected) {

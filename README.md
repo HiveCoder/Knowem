@@ -24,7 +24,7 @@ For local production validation, copy [.env.production.example](c:/Users/asust/D
 - Output directory: `dist`
 - Environment variable: `VITE_SOCKET_URL`
 
-Production builds now fail fast if `VITE_SOCKET_URL` is missing, so Vercel will block a broken frontend deploy instead of shipping a runtime connection error.
+If `VITE_SOCKET_URL` is missing in production, the app stays mounted, logs a warning, and shows the existing offline backend UI instead of crashing.
 
 SPA refresh support is handled by [vercel.json](vercel.json).
 
@@ -35,7 +35,7 @@ The backend is intended to be hosted separately from Vercel.
 ### Required Environment Variables
 
 ```bash
-PORT=3001
+PORT=3000
 CORS_ORIGIN=https://your-vercel-app.vercel.app
 ```
 
@@ -107,6 +107,13 @@ VITE_SOCKET_URL=https://knowem-realtime-backend.onrender.com
 
 To verify before pushing, set the same value in `.env.production.local` and run `npm run build` locally.
 
+Use the same deployed origin on both sides:
+
+```bash
+VITE_SOCKET_URL=https://your-backend-host.example.com
+CORS_ORIGIN=https://your-app.vercel.app
+```
+
 ### Vercel Dashboard Values
 
 - Framework preset: `Vite`
@@ -131,6 +138,7 @@ npm run dev
 ```
 
 For local frontend-to-backend communication, the socket service falls back to `http://localhost:3001` only in development when `VITE_SOCKET_URL` is not set.
+The local backend default port is `3000`, so the frontend dev fallback and the server bootstrap now match.
 
 ## Project Layout
 
@@ -153,6 +161,7 @@ For local frontend-to-backend communication, the socket service falls back to `h
 ## Realtime Notes
 
 - The frontend socket client uses `import.meta.env.VITE_SOCKET_URL`.
+- The socket service falls back to `http://localhost:3000` only during development.
 - Reconnect handling and fallback UI are built into the Pinia game store.
 - The app surfaces backend-unreachable and reconnect states in the UI before players enter a room and while they are in-game.
 

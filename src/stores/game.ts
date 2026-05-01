@@ -1,6 +1,6 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
-import { getSocket, getSocketUrl } from '@/services/socket'
+import { getSocket, getSocketUrl, getSocketWarning } from '@/services/socket'
 import type {
   AdjudicatorVotePayload,
   BotDifficulty,
@@ -28,11 +28,12 @@ export const useGameStore = defineStore('game', () => {
   const backendStatusMessage = ref('')
   const backendUrl = ref(getSocketUrl())
 
-  try {
-    socket = getSocket()
-  } catch (error) {
+  socket = getSocket()
+  const socketWarning = getSocketWarning()
+
+  if (!socket) {
     connectionState.value = 'offline'
-    backendStatusMessage.value = error instanceof Error ? error.message : 'Unable to initialize realtime connection.'
+    backendStatusMessage.value = socketWarning || 'Realtime backend is unavailable.'
     latestError.value = backendStatusMessage.value
   }
 
@@ -74,6 +75,7 @@ export const useGameStore = defineStore('game', () => {
     socket.on('connect_error', () => {
       connectionState.value = 'reconnecting'
       backendStatusMessage.value = `Live backend unreachable${backendUrl.value ? ` at ${backendUrl.value}` : ''}.`
+      latestError.value = backendStatusMessage.value
     })
 
     socket.io.on('reconnect_attempt', () => {
@@ -100,6 +102,7 @@ export const useGameStore = defineStore('game', () => {
 
   const self = computed(() => room.value?.players.find((entry) => entry.id === playerId.value) ?? null)
   const isHost = computed(() => room.value?.hostId === playerId.value)
+  const hasRealtimeConfig = computed(() => Boolean(backendUrl.value))
   const isBackendReachable = computed(() => connectionState.value !== 'offline')
   const isConnecting = computed(() => connectionState.value === 'connecting' || connectionState.value === 'reconnecting')
   const canStart = computed(() => {
@@ -265,6 +268,7 @@ export const useGameStore = defineStore('game', () => {
     playerId,
     self,
     isHost,
+    hasRealtimeConfig,
     isBackendReachable,
     isConnecting,
     connectionState,
