@@ -1,0 +1,68 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Space+Grotesk:wght@500;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#app {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: 'DM Sans', sans-serif;
+  background: #050816;
+}
+
+::selection {
+  background: rgba(61, 217, 235, 0.3);
+}
+
+@layer components {
+  .glass-panel {
+    @apply rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-glow;
+  }
+
+  .pill {
+    @apply inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium tracking-[0.24em] text-slate-300 uppercase;
+  }
+
+  .action-button {
+    @apply inline-flex items-center justify-center rounded-2xl px-4 py-3 font-medium text-slate-950 transition duration-200 disabled:cursor-not-allowed disabled:opacity-40;
+  }
+
+  .input-shell {
+    @apply w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-400/70;
+  }
+
+  .poker-table {
+    background-image:
+      radial-gradient(circle at center, rgba(28, 86, 58, 0.26), transparent 44%),
+      radial-gradient(circle at top, rgba(255, 255, 255, 0.03), transparent 38%),
+      linear-gradient(180deg, rgba(4, 14, 12, 0.92), rgba(3, 8, 14, 1));
+  }
+
+  .adjudicator-spotlight {
+    animation: adjudicatorPulse 2.4s ease-in-out infinite;
+    box-shadow: 0 0 0 1px rgba(248, 214, 109, 0.35), 0 0 32px rgba(248, 214, 109, 0.18);
+  }
+}
+
+@keyframes adjudicatorPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 1px rgba(248, 214, 109, 0.32), 0 0 30px rgba(248, 214, 109, 0.15);
+  }
+
+  50% {
+    transform: scale(1.018);
+    box-shadow: 0 0 0 1px rgba(248, 214, 109, 0.5), 0 0 44px rgba(248, 214, 109, 0.24);
+  }
+}
