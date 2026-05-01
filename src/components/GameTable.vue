@@ -1,46 +1,120 @@
 <template>
   <section class="space-y-5">
-    <div class="glass-panel p-3 sm:p-4">
-      <div class="poker-table relative min-h-[620px] overflow-hidden rounded-[2rem] border border-emerald-400/10 bg-[radial-gradient(circle_at_top,_rgba(28,86,58,0.5),_rgba(8,24,18,0.9)_40%,_rgba(4,10,11,1)_80%)] p-4 sm:min-h-[720px] sm:p-6">
-        <div class="absolute inset-5 rounded-[1.75rem] border border-white/5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.02),0_40px_80px_rgba(0,0,0,0.42)]" />
-        <Deck :round="room.game.round" :trigger-key="lastDealtAt || room.game.round" :seats="deckTargets" />
-
-        <div class="relative z-10 flex flex-wrap items-center justify-between gap-3">
-          <span class="pill !border-emerald-400/25 !bg-emerald-400/10 !text-emerald-100">Round {{ room.game.round }}</span>
+    <div class="glass-panel p-4 sm:p-6">
+      <div class="grid gap-4 lg:grid-cols-[1.2fr_0.8fr] lg:items-start">
+        <div>
           <div class="flex flex-wrap items-center gap-2">
+            <span class="pill !border-emerald-400/25 !bg-emerald-400/10 !text-emerald-100">Room {{ room.code }}</span>
+            <span class="pill">Round {{ room.game.round }}</span>
             <span class="pill">{{ phaseLabel }}</span>
             <span v-if="selfPlayer?.isAdjudicator" class="pill !border-gold-400/30 !text-gold-400">Adjudicator</span>
           </div>
+          <h2 class="mt-4 font-display text-3xl text-white">{{ room.name }}</h2>
+          <p class="mt-2 text-sm text-slate-400">{{ phaseTitle }}</p>
         </div>
 
-        <div class="absolute left-1/2 top-1/2 z-10 w-[min(88%,420px)] -translate-x-1/2 -translate-y-1/2 text-center">
-          <div class="rounded-[2rem] border border-white/10 bg-slate-950/40 px-5 py-6 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:px-7 sm:py-7">
-            <p class="text-xs uppercase tracking-[0.34em] text-emerald-200/70">Center Table</p>
-            <h2 class="mt-4 font-display text-2xl leading-tight text-white sm:text-3xl">{{ room.game.question || 'Shuffling the next question...' }}</h2>
-            <p class="mt-4 text-sm text-slate-300">{{ phaseTitle }}</p>
+        <div class="rounded-[1.5rem] border border-white/10 bg-black/15 p-4 backdrop-blur-md">
+          <p class="text-xs uppercase tracking-[0.3em] text-slate-500">Status</p>
+          <p class="mt-3 text-sm text-slate-300">{{ statusLine }}</p>
+        </div>
+      </div>
+
+      <div class="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div
+          v-for="player in topPlayers"
+          :key="player.id"
+          class="rounded-[1.5rem] border px-4 py-4 backdrop-blur-md transition"
+          :class="playerCardClass(player)"
+        >
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <p class="truncate font-medium text-white">{{ player.username }}</p>
+              <p class="mt-1 text-[11px] uppercase tracking-[0.26em] text-slate-500">{{ topStatusLabel(player) }}</p>
+            </div>
+            <div class="rounded-full border border-white/10 bg-slate-950/60 px-3 py-1 text-sm font-semibold text-gold-300">{{ player.score }}</div>
+          </div>
+
+          <div class="mt-3 flex flex-wrap gap-2">
+            <span v-if="player.id === selfId" class="pill !px-2 !py-0.5">you</span>
+            <span v-if="player.isBot" class="pill !border-cyan-400/25 !text-cyan-300">bot</span>
+            <span v-if="player.isAdjudicator" class="pill !border-gold-400/25 !text-gold-400">judge</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="glass-panel p-4 sm:p-6">
+      <div class="grid gap-4 lg:grid-cols-[0.9fr_1.2fr_0.9fr] lg:items-stretch">
+        <div class="space-y-4">
+          <div class="rounded-[1.75rem] border border-white/10 bg-black/15 p-4 backdrop-blur-md">
+            <p class="text-xs uppercase tracking-[0.3em] text-slate-500">Left Table</p>
+            <div class="mt-4 space-y-4">
+              <div v-if="leftSeats.length === 0" class="rounded-[1.5rem] border border-dashed border-white/10 px-4 py-10 text-center text-sm text-slate-500">
+                Empty lane
+              </div>
+
+              <div v-for="seat in leftSeats" :key="seat.player.id" class="rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-4 opacity-85">
+                <div class="flex items-center justify-between gap-3">
+                  <div class="min-w-0">
+                    <p class="truncate font-medium text-white">{{ seat.player.username }}</p>
+                    <p class="text-[11px] uppercase tracking-[0.26em] text-slate-500">{{ seat.player.isAdjudicator ? 'reading the table' : seat.positionLabel }}</p>
+                  </div>
+                  <div class="text-sm font-semibold text-gold-300">{{ seat.player.score }}</div>
+                </div>
+
+                <div class="mt-4 flex justify-center">
+                  <PlayerHand :cards="seat.cards" compact :empty-label="seat.player.isAdjudicator ? 'Judging' : 'Waiting'" :flip-key="room.game.round" />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div
-          v-for="seat in tableSeats"
-          :key="seat.player.id"
-          class="absolute z-10 w-[180px] -translate-x-1/2 -translate-y-1/2 sm:w-[220px]"
-          :style="{ left: `${seat.left}%`, top: `${seat.top}%` }"
-          v-motion
-          :initial="{ opacity: 0, scale: 0.82, y: 24 }"
-          :enter="{ opacity: 1, scale: seat.player.isAdjudicator ? 1.03 : 1, y: 0 }"
-        >
-          <div class="relative rounded-[1.75rem] border border-white/10 bg-black/20 px-3 py-3 shadow-[0_18px_50px_rgba(0,0,0,0.35)] backdrop-blur-md" :class="seat.player.isAdjudicator ? 'adjudicator-spotlight' : ''">
-            <div class="flex items-center justify-between gap-3">
-              <div class="min-w-0">
-                <p class="truncate font-medium text-white">{{ seat.player.username }}</p>
-                <p class="text-[11px] uppercase tracking-[0.28em] text-slate-400">{{ seat.player.isAdjudicator ? 'reading the table' : seat.positionLabel }}</p>
-              </div>
-              <div class="rounded-full border border-white/10 bg-slate-950/60 px-3 py-1 text-sm font-semibold text-gold-300">{{ seat.player.score }}</div>
+        <div class="poker-table rounded-[2rem] border border-emerald-400/10 p-4 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.02),0_24px_60px_rgba(0,0,0,0.28)] sm:p-6">
+          <div class="grid gap-4">
+            <div class="rounded-[1.75rem] border border-white/10 bg-slate-950/35 px-5 py-6 text-center backdrop-blur-md">
+              <p class="text-xs uppercase tracking-[0.34em] text-emerald-200/70">Focus Area</p>
+              <h3 class="mt-4 font-display text-2xl leading-tight text-white sm:text-3xl">{{ room.game.question || 'Shuffling the next question...' }}</h3>
+              <p class="mt-4 text-sm text-slate-300">{{ phaseTitle }}</p>
             </div>
 
-            <div class="mt-4 flex justify-center">
-              <PlayerHand :cards="seat.cards" :compact="!seat.isSelf" :empty-label="seat.player.isAdjudicator ? 'Judging' : 'Waiting'" :flip-key="room.game.round" />
+            <div class="relative mx-auto min-h-[280px] w-full max-w-[380px] rounded-[1.75rem] border border-white/10 bg-black/10 px-4 py-6 backdrop-blur-md sm:min-h-[320px]">
+              <Deck :round="room.game.round" :trigger-key="lastDealtAt || room.game.round" :seats="deckTargets" />
+
+              <div class="relative z-10 flex h-full flex-col items-center justify-center gap-5">
+                <div class="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-4 py-2 text-xs uppercase tracking-[0.28em] text-emerald-100">
+                  Active cards
+                </div>
+
+                <div class="rounded-[1.5rem] border border-white/10 bg-slate-950/35 px-4 py-5 shadow-[0_18px_50px_rgba(0,0,0,0.28)]">
+                  <PlayerHand :cards="focusCards" :empty-label="selfPlayer?.isAdjudicator ? 'Adjudicator' : 'Waiting for deal'" :flip-key="room.game.round" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <div class="rounded-[1.75rem] border border-white/10 bg-black/15 p-4 backdrop-blur-md">
+            <p class="text-xs uppercase tracking-[0.3em] text-slate-500">Right Table</p>
+            <div class="mt-4 space-y-4">
+              <div v-if="rightSeats.length === 0" class="rounded-[1.5rem] border border-dashed border-white/10 px-4 py-10 text-center text-sm text-slate-500">
+                Empty lane
+              </div>
+
+              <div v-for="seat in rightSeats" :key="seat.player.id" class="rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-4 opacity-85">
+                <div class="flex items-center justify-between gap-3">
+                  <div class="min-w-0">
+                    <p class="truncate font-medium text-white">{{ seat.player.username }}</p>
+                    <p class="text-[11px] uppercase tracking-[0.26em] text-slate-500">{{ seat.player.isAdjudicator ? 'reading the table' : seat.positionLabel }}</p>
+                  </div>
+                  <div class="text-sm font-semibold text-gold-300">{{ seat.player.score }}</div>
+                </div>
+
+                <div class="mt-4 flex justify-center">
+                  <PlayerHand :cards="seat.cards" compact :empty-label="seat.player.isAdjudicator ? 'Judging' : 'Waiting'" :flip-key="room.game.round" />
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -51,10 +125,10 @@
       <div class="glass-panel p-5 sm:p-6">
         <div class="flex items-center justify-between gap-3">
           <div>
-            <p class="pill">Phase Control</p>
-            <h3 class="mt-4 font-display text-2xl text-white">{{ phaseTitle }}</h3>
+            <p class="pill">Player Actions</p>
+            <h3 class="mt-4 font-display text-2xl text-white">Controls and choices</h3>
           </div>
-          <span class="pill !border-emerald-400/25 !text-emerald-100">Poker flow</span>
+          <span class="pill !border-emerald-400/25 !text-emerald-100">Bottom rail</span>
         </div>
 
         <div v-if="!selfPlayer?.isAdjudicator" class="mt-6 space-y-4" v-motion :initial="{ opacity: 0, y: 14 }" :enter="{ opacity: 1, y: 0 }">
@@ -75,12 +149,14 @@
           <div v-if="judgableAnswers.length === 0" class="rounded-2xl border border-dashed border-white/10 px-4 py-10 text-center text-sm text-slate-500">
             Waiting for players to submit their answers.
           </div>
+
           <div v-for="player in judgableAnswers" :key="player.id" class="rounded-3xl border border-white/10 bg-slate-950/55 p-4">
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p class="font-medium text-white">{{ player.username }}</p>
                 <p class="mt-2 text-sm leading-6 text-slate-300">{{ player.answerText }}</p>
               </div>
+
               <div class="flex gap-2">
                 <button class="action-button min-w-24 bg-cyan-400 text-slate-950 hover:bg-cyan-300" :class="guesses[player.id] === 'truth' ? '!ring-2 !ring-cyan-100' : ''" @click="guesses[player.id] = 'truth'">
                   Truth
@@ -91,6 +167,7 @@
               </div>
             </div>
           </div>
+
           <button class="action-button w-full bg-gold-400 text-slate-950 hover:bg-gold-300" :disabled="!canSubmitVotes" @click="submitJudgement">
             Lock adjudicator verdict
           </button>
@@ -105,6 +182,7 @@
           </div>
           <span class="pill !border-white/10 !text-slate-300">Hover cards</span>
         </div>
+
         <div class="mt-6 flex justify-center rounded-[2rem] border border-white/10 bg-black/15 px-4 py-8">
           <PlayerHand :cards="selfCards" :empty-label="selfPlayer?.isAdjudicator ? 'Adjudicator' : 'Waiting for deal'" :flip-key="room.game.round" />
         </div>
@@ -141,15 +219,13 @@ const draftAnswer = ref('')
 const showResults = ref(true)
 const guesses = reactive<Record<string, 'truth' | 'false'>>({})
 
-const seatPresets = [
-  { left: 50, top: 84, positionLabel: 'your seat' },
-  { left: 50, top: 14, positionLabel: 'north rail' },
-  { left: 18, top: 28, positionLabel: 'west corner' },
-  { left: 82, top: 28, positionLabel: 'east corner' },
-  { left: 14, top: 54, positionLabel: 'left wing' },
-  { left: 86, top: 54, positionLabel: 'right wing' },
-  { left: 28, top: 14, positionLabel: 'upper left' },
-  { left: 72, top: 14, positionLabel: 'upper right' },
+const focusSeatPresets = [
+  { left: 50, top: 14 },
+  { left: 20, top: 42 },
+  { left: 80, top: 42 },
+  { left: 50, top: 76 },
+  { left: 28, top: 20 },
+  { left: 72, top: 20 },
 ]
 
 watch(
@@ -165,6 +241,7 @@ watch(
 )
 
 const selfPlayer = computed(() => props.room.players.find((player) => player.id === props.selfId) ?? null)
+const topPlayers = computed(() => props.room.players.filter((player) => player.connected))
 const canAnswer = computed(() => {
   if (!selfPlayer.value || selfPlayer.value.isAdjudicator) {
     return false
@@ -202,45 +279,53 @@ const statusLine = computed(() => {
   }
   return 'Answer in text now. Voice room can be layered in later without changing the state model.'
 })
-const orderedPlayers = computed(() => {
-  const players = props.room.players.filter((player) => player.connected)
-  const self = players.find((player) => player.id === props.selfId)
-  const others = players.filter((player) => player.id !== props.selfId)
-  return self ? [self, ...others] : players
+
+const sideSeats = computed(() => {
+  const players = props.room.players.filter((player) => player.connected && player.id !== props.selfId)
+  return players.map((player, index) => ({
+    player,
+    positionLabel: index % 2 === 0 ? 'table left' : 'table right',
+    cards: handCardsForPlayer(player, false),
+  }))
 })
 
+const leftSeats = computed(() => sideSeats.value.filter((_seat, index) => index % 2 === 0))
+const rightSeats = computed(() => sideSeats.value.filter((_seat, index) => index % 2 === 1))
 const selfCards = computed<HandCardItem[]>(() => handCardsForPlayer(selfPlayer.value ?? null, true))
-const tableSeats = computed(() =>
-  orderedPlayers.value.map((player, index) => {
-    const preset = seatPresets[index] ?? seatPresets[seatPresets.length - 1]
-    return {
-      player,
-      left: preset.left,
-      top: preset.top,
-      positionLabel: preset.positionLabel,
-      isSelf: player.id === props.selfId,
-      cards: handCardsForPlayer(player, player.id === props.selfId),
-    }
-  }),
-)
+const focusCards = computed<HandCardItem[]>(() => {
+  if (selfPlayer.value?.isAdjudicator) {
+    return [
+      {
+        id: 'judge-focus',
+        title: 'Adjudicator',
+        subtitle: 'Read the room and catch the bluff',
+        tone: 'neutral',
+        revealed: true,
+        badgeLabel: 'Judge',
+      },
+    ]
+  }
+
+  return selfCards.value
+})
 
 const deckTargets = computed(() =>
-  tableSeats.value
-    .filter((seat) => !seat.player.isAdjudicator)
-    .map((seat) => ({
-      id: seat.player.id,
-      left: seat.left,
-      top: seat.top,
-      cardCount: seat.cards.length || 2,
-    })),
+  topPlayers.value
+    .filter((player) => !player.isAdjudicator)
+    .map((player, index) => {
+      const preset = focusSeatPresets[index] ?? focusSeatPresets[focusSeatPresets.length - 1]
+      const cards = handCardsForPlayer(player, player.id === props.selfId)
+      return {
+        id: player.id,
+        left: preset.left,
+        top: preset.top,
+        cardCount: cards.length || 2,
+      }
+    }),
 )
 
 function handCardsForPlayer(player: RoomState['players'][number] | null, isSelf: boolean): HandCardItem[] {
-  if (!player) {
-    return []
-  }
-
-  if (player.isAdjudicator) {
+  if (!player || player.isAdjudicator) {
     return []
   }
 
@@ -256,7 +341,12 @@ function handCardsForPlayer(player: RoomState['players'][number] | null, isSelf:
       },
       {
         id: `${player.id}-wild`,
-        title: props.privateState?.wildCard === 'forced_truth' ? 'Forced Truth' : props.privateState?.wildCard === 'counter' ? 'Counter Card' : 'No Wild',
+        title:
+          props.privateState?.wildCard === 'forced_truth'
+            ? 'Forced Truth'
+            : props.privateState?.wildCard === 'counter'
+              ? 'Counter Card'
+              : 'No Wild',
         subtitle:
           props.privateState?.wildCard === 'forced_truth'
             ? 'Truth overrides role'
@@ -282,7 +372,12 @@ function handCardsForPlayer(player: RoomState['players'][number] | null, isSelf:
       },
       {
         id: `${player.id}-wild-known`,
-        title: player.wildCardKnown === 'forced_truth' ? 'Forced Truth' : player.wildCardKnown === 'counter' ? 'Counter Card' : 'No Wild',
+        title:
+          player.wildCardKnown === 'forced_truth'
+            ? 'Forced Truth'
+            : player.wildCardKnown === 'counter'
+              ? 'Counter Card'
+              : 'No Wild',
         subtitle: player.wildCardKnown ? 'Shown at reveal' : 'No modifier',
         tone: 'wild',
         revealed: true,
@@ -311,6 +406,30 @@ function handCardsForPlayer(player: RoomState['players'][number] | null, isSelf:
       badgeLabel: 'Hidden',
     },
   ]
+}
+
+function playerCardClass(player: RoomState['players'][number]) {
+  if (player.isAdjudicator) {
+    return 'border-gold-400/30 bg-gold-400/10'
+  }
+
+  if (player.id === props.selfId) {
+    return 'border-cyan-400/30 bg-cyan-400/10'
+  }
+
+  return 'border-white/10 bg-white/[0.03]'
+}
+
+function topStatusLabel(player: RoomState['players'][number]) {
+  if (!player.connected) {
+    return 'offline'
+  }
+
+  if (player.isAdjudicator) {
+    return 'adjudicating'
+  }
+
+  return player.ready ? 'ready' : 'waiting'
 }
 
 function submitOwnAnswer() {
