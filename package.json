@@ -15,7 +15,7 @@
     "build:full": "npm run build && npm run build:server",
     "preview": "vite preview",
     "start": "npm run start:server",
-    "start:server": "node dist-server/index.js"
+    "start:server": "node dist-server/server/index.js"
   },
   "dependencies": {
     "@vueuse/motion": "^3.0.3",

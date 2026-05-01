@@ -6,10 +6,37 @@ import { GameEngine } from './gameEngine.js'
 import { registerSocketHandlers } from './socketHandlers.js'
 
 const app = express()
-const allowedOrigins = process.env.CORS_ORIGIN
+const configuredOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(',').map((origin) => origin.trim()).filter(Boolean)
   : []
-const corsOrigin = allowedOrigins.length > 0 ? allowedOrigins : true
+
+function escapeRegexSegment(value: string) {
+  return value.replace(/[|\\{}()[\]^$+?.]/g, '\\$&')
+}
+
+function createOriginMatcher(pattern: string) {
+  if (!pattern.includes('*')) {
+    return (origin: string) => origin === pattern
+  }
+
+  const source = `^${pattern.split('*').map(escapeRegexSegment).join('.*')}$`
+  const expression = new RegExp(source)
+  return (origin: string) => expression.test(origin)
+}
+
+const allowedOriginMatchers = configuredOrigins.map(createOriginMatcher)
+
+function isOriginAllowed(origin?: string) {
+  if (allowedOriginMatchers.length === 0 || !origin) {
+    return true
+  }
+
+  return allowedOriginMatchers.some((matches) => matches(origin))
+}
+
+function corsOrigin(origin: string | undefined, callback: (error: Error | null, allow?: boolean) => void) {
+  callback(null, isOriginAllowed(origin))
+}
 
 app.use(cors({ origin: corsOrigin, credentials: true }))
 app.get('/health', (_req, res) => {

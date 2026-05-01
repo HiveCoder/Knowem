@@ -22,11 +22,35 @@ For local production validation, copy [.env.production.example](c:/Users/asust/D
 
 - Build command: `npm run build`
 - Output directory: `dist`
+- Install command: `npm install`
 - Environment variable: `VITE_SOCKET_URL`
+- Production branch: `main`
 
 If `VITE_SOCKET_URL` is missing in production, the app stays mounted, logs a warning, and shows the existing offline backend UI instead of crashing.
 
 SPA refresh support is handled by [vercel.json](vercel.json).
+
+### Vercel Import Flow
+
+1. In Vercel, import the Git repository for this project.
+2. Keep the project root at the repository root.
+3. Let Vercel detect the app as a Vite frontend.
+4. Confirm the build settings below before the first deploy.
+
+```text
+Framework Preset: Vite
+Install Command: npm install
+Build Command: npm run build
+Output Directory: dist
+```
+
+Add the environment variable in Vercel before promoting to production:
+
+```bash
+VITE_SOCKET_URL=https://your-backend-url.example.com
+```
+
+Use the same value for `Preview` and `Production` unless you run separate backend environments.
 
 ## Backend Deployment
 
@@ -40,6 +64,7 @@ CORS_ORIGIN=https://your-vercel-app.vercel.app
 ```
 
 `CORS_ORIGIN` accepts a comma-separated list of allowed frontend origins.
+Entries may include `*` wildcards, which is useful for Vercel preview deployments such as `https://knowem-*.vercel.app`.
 
 ### Backend Commands
 
@@ -65,13 +90,15 @@ Manual settings:
 Environment variables:
 
 - `PORT`: leave Render default or set explicitly
-- `CORS_ORIGIN`: `https://your-vercel-app.vercel.app`
+- `CORS_ORIGIN`: `https://your-vercel-app.vercel.app,https://your-project-*.vercel.app`
 
 After deploy, copy the public backend URL, for example:
 
 ```bash
 https://knowem-realtime-backend.onrender.com
 ```
+
+If you are using the existing Render Blueprint shown in the dashboard, make sure the `knowem-realtime-backend` service is selected and finishes provisioning before you continue in Vercel.
 
 #### Option B: Railway
 
@@ -111,15 +138,29 @@ Use the same deployed origin on both sides:
 
 ```bash
 VITE_SOCKET_URL=https://your-backend-host.example.com
-CORS_ORIGIN=https://your-app.vercel.app
+CORS_ORIGIN=https://your-app.vercel.app,https://your-project-*.vercel.app
 ```
 
 ### Vercel Dashboard Values
 
 - Framework preset: `Vite`
+- Install command: `npm install`
 - Build command: `npm run build`
 - Output directory: `dist`
 - Environment variable: `VITE_SOCKET_URL`
+
+### Vercel CLI Option
+
+If you prefer to finish the setup from the terminal instead of the dashboard:
+
+```bash
+vercel link
+vercel env add VITE_SOCKET_URL production
+vercel env add VITE_SOCKET_URL preview
+vercel --prod
+```
+
+When prompted for the value, paste the HTTPS backend URL from Render or Railway.
 
 ## Recommended Deployment Order
 
@@ -128,7 +169,14 @@ CORS_ORIGIN=https://your-app.vercel.app
 3. Copy the backend HTTPS URL.
 4. Add `VITE_SOCKET_URL` in Vercel using that backend URL.
 5. Deploy the frontend on Vercel.
-6. Verify `/health` on the backend and a room create/join flow in the frontend.
+6. Redeploy the backend if `CORS_ORIGIN` changed after the first frontend deploy.
+7. Verify `/health` on the backend and a room create/join flow in the frontend.
+
+For this repository's current naming, the backend can safely allow:
+
+```bash
+CORS_ORIGIN=https://knowem.vercel.app,https://knowem-*.vercel.app
+```
 
 ## Local Development
 
@@ -139,6 +187,15 @@ npm run dev
 
 For local frontend-to-backend communication, the socket service falls back to `http://localhost:3001` only in development when `VITE_SOCKET_URL` is not set.
 The local backend default port is `3000`, so the frontend dev fallback and the server bootstrap now match.
+
+For local production-like verification before pushing to Vercel:
+
+```bash
+copy .env.production.example .env.production.local
+npm run build
+```
+
+Then replace the placeholder value in `.env.production.local` with your real hosted backend URL and run `npm run build` again.
 
 ## Project Layout
 
@@ -176,4 +233,4 @@ The local backend default port is `3000`, so the frontend dev fallback and the s
 - Vercel does not host the Socket.io server for this app.
 - Use an HTTPS backend URL in `VITE_SOCKET_URL`; Socket.io will upgrade appropriately for secure deployments.
 - Keep secrets out of the frontend. Only `VITE_` public variables should be exposed to Vercel.
-- For multiple frontend domains, set `CORS_ORIGIN` as a comma-separated list.
+- For multiple frontend domains, set `CORS_ORIGIN` as a comma-separated list. Wildcard entries such as `https://knowem-*.vercel.app` are supported by the backend.
