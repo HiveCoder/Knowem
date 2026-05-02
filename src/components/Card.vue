@@ -72,7 +72,7 @@ const props = withDefaults(
 
 const innerRef = ref<HTMLElement | null>(null)
 
-const sizeClass = computed(() => (props.size === 'sm' ? 'aspect-[3/4] w-[5.25rem] sm:w-[5.75rem]' : 'aspect-[3/4] w-[7.25rem] sm:w-[8rem]'))
+const sizeClass = computed(() => (props.size === 'sm' ? 'aspect-[3/4] w-[5.25rem] sm:w-[5.75rem]' : 'aspect-[3/4] w-[7.5rem] sm:w-[8.5rem]'))
 const frontToneClass = computed(() => {
   if (props.tone === 'truth') {
     return 'text-zinc-100'
@@ -177,6 +177,8 @@ onMounted(() => {
 .card-shell {
   perspective: 1200px;
   transition: transform 220ms ease, filter 220ms ease;
+  position: relative;
+  z-index: 2;
 }
 
 .card-shell:hover {
@@ -241,11 +243,11 @@ onMounted(() => {
 
 .card-back,
 .card-front {
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.18);
 }
 
 .card-shell-selected .card-front,
 .card-shell-selected .card-back {
-  box-shadow: 0 0 0 1px rgba(82, 82, 91, 0.9), 0 12px 22px rgba(0, 0, 0, 0.24);
+  box-shadow: 0 0 0 1px rgba(82, 82, 91, 0.88), 0 12px 20px rgba(0, 0, 0, 0.22);
 }
 </style>

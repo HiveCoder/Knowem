@@ -9,6 +9,7 @@
         v-for="(card, index) in cards"
         :key="card.id"
         class="relative shrink-0 will-change-transform transition duration-200"
+        :class="slotClass"
         :style="cardStyle(index, hoveredIndex === index)"
         @mouseenter="hoveredIndex = index"
         @mouseleave="hoveredIndex = null"
@@ -24,6 +25,11 @@
           :back-label="card.backLabel || 'Hidden card'"
           :badge-label="card.badgeLabel || 'Knowem'"
         />
+
+        <div v-if="layout === 'focus'" class="mt-4 flex flex-col items-center gap-1 px-2 text-center">
+          <p class="text-sm font-semibold leading-5 text-slate-100">{{ card.title }}</p>
+          <p v-if="card.subtitle" class="max-w-[12rem] text-xs leading-5 text-slate-400">{{ card.subtitle }}</p>
+        </div>
       </div>
     </div>
   </div>
@@ -49,22 +55,42 @@ const props = withDefaults(
     compact?: boolean
     emptyLabel?: string
     flipKey?: string | number
+    layout?: 'default' | 'focus'
   }>(),
   {
     compact: false,
     emptyLabel: 'No cards',
     flipKey: '',
+    layout: 'default',
   },
 )
 
 const hoveredIndex = ref<number | null>(null)
 
-const containerClass = computed(() => (props.compact ? 'min-h-36 w-full max-w-[240px]' : 'min-h-52 w-full max-w-[420px]'))
-const handClass = computed(() =>
-  props.compact ? 'flex-wrap gap-2.5 sm:flex-nowrap sm:gap-3' : 'flex-wrap gap-3 sm:flex-nowrap sm:gap-4',
-)
+const containerClass = computed(() => {
+  if (props.layout === 'focus') {
+    return 'min-h-[20rem] w-full max-w-[34rem] overflow-hidden'
+  }
+  return props.compact ? 'min-h-36 w-full max-w-[240px]' : 'min-h-52 w-full max-w-[420px]'
+})
+
+const handClass = computed(() => {
+  if (props.layout === 'focus') {
+    return 'flex-wrap items-start gap-4 sm:gap-5'
+  }
+  return props.compact ? 'flex-wrap gap-2.5 sm:flex-nowrap sm:gap-3' : 'flex-wrap gap-3 sm:flex-nowrap sm:gap-4'
+})
+
+const slotClass = computed(() => (props.layout === 'focus' ? 'flex flex-col items-center justify-start' : ''))
 
 function cardStyle(index: number, hovered: boolean) {
+  if (props.layout === 'focus') {
+    return {
+      transform: `translateY(${hovered ? -6 : 0}px) scale(${hovered ? 1.01 : 1})`,
+      zIndex: hovered ? props.cards.length + 2 : index + 1,
+    }
+  }
+
   const total = props.cards.length
   const centerOffset = index - (total - 1) / 2
   const baseRotation = props.compact ? centerOffset * 2.5 : centerOffset * 3

@@ -75,14 +75,23 @@
                 <p class="mt-3 text-sm leading-6 text-slate-300">{{ phaseTitle }}</p>
               </div>
 
-              <div class="relative mx-auto w-full max-w-[620px] overflow-hidden rounded-[28px] border border-white/10 bg-[rgba(8,12,22,0.34)] px-4 py-5 backdrop-blur-md sm:px-6 sm:py-6">
+              <div class="relative mx-auto w-full max-w-[664px] overflow-hidden rounded-[28px] border border-white/10 bg-[rgba(8,12,22,0.34)] px-4 py-5 backdrop-blur-md sm:px-6 sm:py-6">
                 <Deck :round="room.game.round" :trigger-key="lastDealtAt || room.game.round" :seats="deckTargets" />
 
-                <div class="relative z-10 flex min-h-[250px] flex-col items-center justify-center gap-4 sm:min-h-[280px]">
-                  <UiBadge tone="muted">Active cards</UiBadge>
+                <div class="relative z-10 grid min-h-[296px] grid-rows-[auto_1fr] items-start gap-4">
+                  <div class="flex justify-center">
+                    <UiBadge tone="muted">Active cards</UiBadge>
+                  </div>
 
-                  <div class="w-full overflow-hidden rounded-[24px] border border-white/10 bg-slate-950/45 px-4 py-6 shadow-[0_18px_40px_rgba(2,6,23,0.16)]">
-                    <PlayerHand :cards="focusCards" :empty-label="selfPlayer?.isAdjudicator ? 'Adjudicator' : 'Waiting for deal'" :flip-key="room.game.round" />
+                  <div class="relative isolate grid min-h-[240px] place-items-center overflow-hidden rounded-[24px] border border-white/10 bg-slate-950/45 px-4 py-6 shadow-[0_16px_32px_rgba(2,6,23,0.14)] sm:px-6">
+                    <div class="pointer-events-none absolute inset-x-6 top-6 h-px bg-white/8" />
+                    <div class="pointer-events-none absolute inset-x-6 bottom-6 h-px bg-white/8" />
+
+                    <div class="relative z-10 flex w-full max-w-[34rem] flex-col items-center gap-4 text-center">
+                      <h3 class="text-lg font-semibold text-white sm:text-xl">Center play area</h3>
+                      <p class="max-w-[32rem] text-sm leading-6 text-slate-400">Cards reflow automatically to keep spacing, centering, and readability intact.</p>
+                      <PlayerHand :cards="focusCards" layout="focus" :empty-label="selfPlayer?.isAdjudicator ? 'Adjudicator' : 'Waiting for deal'" :flip-key="room.game.round" />
+                    </div>
                   </div>
                 </div>
               </div>
