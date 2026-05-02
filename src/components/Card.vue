@@ -75,30 +75,30 @@ const innerRef = ref<HTMLElement | null>(null)
 const sizeClass = computed(() => (props.size === 'sm' ? 'h-28 w-20 sm:h-32 sm:w-24' : 'h-40 w-28 sm:h-44 sm:w-32'))
 const frontToneClass = computed(() => {
   if (props.tone === 'truth') {
-    return 'text-blue-100 shadow-[0_14px_32px_rgba(59,130,246,0.16)]'
+    return 'text-slate-900 shadow-[0_16px_28px_rgba(15,23,42,0.16)]'
   }
   if (props.tone === 'false') {
-    return 'text-rose-100 shadow-[0_14px_32px_rgba(244,63,94,0.16)]'
+    return 'text-slate-900 shadow-[0_16px_28px_rgba(15,23,42,0.16)]'
   }
   if (props.tone === 'wild') {
-    return 'text-violet-100 shadow-[0_14px_32px_rgba(167,139,250,0.16)]'
+    return 'text-slate-900 shadow-[0_16px_28px_rgba(15,23,42,0.16)]'
   }
   if (props.tone === 'question') {
-    return 'text-amber-100 shadow-[0_14px_32px_rgba(245,158,11,0.15)]'
+    return 'text-slate-900 shadow-[0_16px_28px_rgba(15,23,42,0.16)]'
   }
-  return 'text-slate-100 shadow-[0_14px_30px_rgba(15,23,42,0.24)]'
+  return 'text-slate-900 shadow-[0_16px_28px_rgba(15,23,42,0.18)]'
 })
 const backToneClass = computed(() => {
   if (props.tone === 'false') {
-    return 'text-rose-200'
+    return 'text-slate-100'
   }
   if (props.tone === 'wild') {
-    return 'text-violet-200'
+    return 'text-slate-100'
   }
   if (props.tone === 'question') {
-    return 'text-amber-200'
+    return 'text-slate-100'
   }
-  return 'text-blue-200'
+  return 'text-slate-100'
 })
 
 const toneLabel = computed(() => {
@@ -135,18 +135,18 @@ const footerLabel = computed(() => {
 
 const toneDotClass = computed(() => {
   if (props.tone === 'truth') {
-    return 'bg-blue-300 shadow-[0_0_18px_rgba(96,165,250,0.45)]'
+    return 'bg-emerald-500'
   }
   if (props.tone === 'false') {
-    return 'bg-rose-300 shadow-[0_0_18px_rgba(251,113,133,0.45)]'
+    return 'bg-rose-500'
   }
   if (props.tone === 'wild') {
-    return 'bg-violet-300 shadow-[0_0_18px_rgba(196,181,253,0.45)]'
+    return 'bg-amber-500'
   }
   if (props.tone === 'question') {
-    return 'bg-amber-300 shadow-[0_0_18px_rgba(252,211,77,0.45)]'
+    return 'bg-slate-700'
   }
-  return 'bg-slate-300 shadow-[0_0_18px_rgba(148,163,184,0.4)]'
+  return 'bg-slate-600'
 })
 
 async function animateFlip() {
@@ -158,8 +158,8 @@ async function animateFlip() {
   gsap.killTweensOf(innerRef.value)
   gsap.to(innerRef.value, {
     rotateY: props.revealed ? 180 : 0,
-    duration: 0.72,
-    ease: 'power3.out',
+    duration: 0.58,
+    ease: 'power2.out',
     force3D: true,
   })
 }
@@ -180,12 +180,12 @@ onMounted(() => {
 }
 
 .card-shell:hover {
-  transform: translateY(-6px) scale(1.035);
-  filter: brightness(1.02);
+  transform: translateY(-4px);
+  filter: brightness(1.01);
 }
 
 .card-shell-selected {
-  transform: translateY(-4px) scale(1.03);
+  transform: translateY(-2px);
 }
 
 .card-inner {
@@ -208,8 +208,8 @@ onMounted(() => {
 
 .card-chip {
   border-radius: 9999px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: rgba(255, 255, 255, 0.72);
   padding: 0.35rem 0.7rem;
   font-size: 10px;
   font-weight: 600;
@@ -226,26 +226,26 @@ onMounted(() => {
 .card-backdrop {
   border-color: rgba(255, 255, 255, 0.08);
   background:
-    radial-gradient(circle at top, rgba(255, 255, 255, 0.08), transparent 40%),
-    linear-gradient(180deg, rgba(16, 24, 40, 0.98), rgba(10, 15, 27, 0.98));
+    linear-gradient(135deg, rgba(255, 255, 255, 0.06) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.06) 50%, rgba(255, 255, 255, 0.06) 75%, transparent 75%, transparent),
+    linear-gradient(180deg, rgba(28, 74, 140, 0.98), rgba(19, 52, 104, 0.98));
+  background-size: 14px 14px, auto;
 }
 
 .card-frontdrop {
-  border-color: currentColor;
-  border-opacity: 0.18;
+  border-color: rgba(15, 23, 42, 0.14);
   background:
-    radial-gradient(circle at top, rgba(255, 255, 255, 0.16), transparent 38%),
-    linear-gradient(180deg, rgba(18, 28, 46, 0.92), rgba(12, 18, 31, 0.88));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.92), transparent 36%),
+    linear-gradient(180deg, rgba(250, 248, 242, 0.98), rgba(239, 235, 227, 0.98));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
 .card-back,
 .card-front {
-  box-shadow: 0 18px 36px rgba(2, 6, 23, 0.22);
+  box-shadow: 0 16px 26px rgba(15, 23, 42, 0.18);
 }
 
 .card-shell-selected .card-front,
 .card-shell-selected .card-back {
-  box-shadow: 0 0 0 1px rgba(124, 156, 255, 0.18), 0 24px 48px rgba(2, 6, 23, 0.26);
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.12), 0 20px 30px rgba(15, 23, 42, 0.2);
 }
 </style>

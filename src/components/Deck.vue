@@ -122,32 +122,30 @@ async function runDealAnimation() {
   const shuffleTimeline = gsap.timeline()
   shuffleTimeline
     .to(stackRefs.value, {
-      x: (_index: number) => gsap.utils.random(-26, 26),
-      y: (_index: number) => gsap.utils.random(-18, 18),
-      rotate: () => gsap.utils.random(-10, 10),
-      duration: 0.28,
-      ease: 'power2.out',
-      stagger: 0.03,
+      y: (_index: number) => gsap.utils.random(-10, 4),
+      rotate: () => gsap.utils.random(-3, 3),
+      duration: 0.18,
+      ease: 'power1.out',
+      stagger: 0.02,
     })
     .to(
       stackRefs.value,
       {
         keyframes: [
-          { x: () => gsap.utils.random(-36, 36), y: () => gsap.utils.random(-18, 18), duration: 0.12 },
-          { x: () => gsap.utils.random(-30, 30), y: () => gsap.utils.random(-18, 18), duration: 0.12 },
-          { x: () => gsap.utils.random(-18, 18), y: () => gsap.utils.random(-12, 12), duration: 0.12 },
+          { y: () => gsap.utils.random(-14, -6), duration: 0.08 },
+          { y: () => gsap.utils.random(-8, 2), duration: 0.08 },
         ],
         ease: 'power1.inOut',
         stagger: 0.02,
       },
-      '-=0.08',
+      '-=0.04',
     )
     .to(stackRefs.value, {
       x: 0,
       y: 0,
       rotate: 0,
-      duration: 0.32,
-      ease: 'power3.out',
+      duration: 0.22,
+      ease: 'power2.out',
       stagger: 0.02,
     })
 
@@ -164,20 +162,22 @@ async function runDealAnimation() {
     const anchorBounds = anchor.getBoundingClientRect()
     const targetX = anchorBounds.left + anchorBounds.width / 2 - (tableBounds.left + tableBounds.width / 2)
     const targetY = anchorBounds.top + anchorBounds.height / 2 - (tableBounds.top + tableBounds.height / 2)
-    const arcY = targetY - 60 - Math.abs(targetX) * 0.08
+    const seatOffset = (card.cardIndex - (Math.max(card.cardCount ?? 2, 2) - 1) / 2) * 18
+    const finalX = targetX + seatOffset
+    const arcY = targetY - 34 - Math.abs(finalX) * 0.04
 
     gsap.fromTo(
       element,
-      { opacity: 1, x: centerX, y: centerY, rotate: gsap.utils.random(-8, 8), scale: 1 },
+      { opacity: 1, x: centerX, y: centerY - 8, rotate: gsap.utils.random(-4, 4), scale: 1 },
       {
         keyframes: [
-          { x: targetX * 0.35, y: arcY, rotate: gsap.utils.random(-12, 12), duration: 0.26, ease: 'power1.out' },
-          { x: targetX, y: targetY, rotate: gsap.utils.random(-8, 8), duration: 0.34, ease: 'power2.inOut' },
+          { x: finalX * 0.42, y: arcY, rotate: gsap.utils.random(-5, 5), duration: 0.18, ease: 'power1.out' },
+          { x: finalX, y: targetY, rotate: gsap.utils.random(-3, 3), duration: 0.22, ease: 'power2.out' },
         ],
-        delay: index * 0.14,
+        delay: index * 0.11,
         onStart: () => emitSound('deal'),
         onComplete: () => {
-          gsap.to(element, { opacity: 0, duration: 0.12, delay: 0.08 })
+          gsap.to(element, { opacity: 0, duration: 0.08, delay: 0.03 })
         },
       },
     )

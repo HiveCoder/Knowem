@@ -4,11 +4,11 @@
       {{ emptyLabel }}
     </div>
 
-    <div v-else class="relative h-full w-full">
+    <div v-else class="flex h-full w-full items-end justify-center" :class="handClass">
       <div
         v-for="(card, index) in cards"
         :key="card.id"
-        class="absolute bottom-0 left-1/2 will-change-transform transition duration-200"
+        class="relative shrink-0 will-change-transform transition duration-200"
         :style="cardStyle(index, hoveredIndex === index)"
         @mouseenter="hoveredIndex = index"
         @mouseleave="hoveredIndex = null"
@@ -59,18 +59,18 @@ const props = withDefaults(
 
 const hoveredIndex = ref<number | null>(null)
 
-const containerClass = computed(() => (props.compact ? 'h-36 w-[180px] sm:w-[210px]' : 'h-48 w-[250px] sm:w-[320px]'))
+const containerClass = computed(() => (props.compact ? 'min-h-36 w-full max-w-[220px]' : 'min-h-48 w-full max-w-[420px]'))
+const handClass = computed(() => (props.compact ? 'gap-2.5 sm:gap-3' : 'gap-3 sm:gap-4'))
 
 function cardStyle(index: number, hovered: boolean) {
   const total = props.cards.length
-  const spread = props.compact ? 24 : 34
-  const offset = (index - (total - 1) / 2) * spread
-  const baseRotation = (index - (total - 1) / 2) * 10
-  const lift = hovered ? -26 : 0
-  const scale = hovered ? 1.075 : 1
+  const centerOffset = index - (total - 1) / 2
+  const baseRotation = props.compact ? centerOffset * 3.5 : centerOffset * 4.5
+  const lift = hovered ? -16 : 0
+  const scale = hovered ? 1.03 : 1
 
   return {
-    transform: `translateX(calc(-50% + ${offset}px)) translateY(${lift}px) rotate(${baseRotation}deg) scale(${scale})`,
+    transform: `translateY(${lift}px) rotate(${baseRotation}deg) scale(${scale})`,
     zIndex: hovered ? total + 2 : index + 1,
   }
 }
