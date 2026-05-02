@@ -59,15 +59,17 @@ const props = withDefaults(
 
 const hoveredIndex = ref<number | null>(null)
 
-const containerClass = computed(() => (props.compact ? 'min-h-36 w-full max-w-[220px]' : 'min-h-48 w-full max-w-[420px]'))
-const handClass = computed(() => (props.compact ? 'gap-2.5 sm:gap-3' : 'gap-3 sm:gap-4'))
+const containerClass = computed(() => (props.compact ? 'min-h-36 w-full max-w-[240px]' : 'min-h-52 w-full max-w-[420px]'))
+const handClass = computed(() =>
+  props.compact ? 'flex-wrap gap-2.5 sm:flex-nowrap sm:gap-3' : 'flex-wrap gap-3 sm:flex-nowrap sm:gap-4',
+)
 
 function cardStyle(index: number, hovered: boolean) {
   const total = props.cards.length
   const centerOffset = index - (total - 1) / 2
-  const baseRotation = props.compact ? centerOffset * 3.5 : centerOffset * 4.5
-  const lift = hovered ? -16 : 0
-  const scale = hovered ? 1.03 : 1
+  const baseRotation = props.compact ? centerOffset * 2.5 : centerOffset * 3
+  const lift = hovered ? -10 : 0
+  const scale = hovered ? 1.02 : 1
 
   return {
     transform: `translateY(${lift}px) rotate(${baseRotation}deg) scale(${scale})`,

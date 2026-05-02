@@ -50,7 +50,7 @@
         </div>
       </div>
 
-      <div v-else class="grid gap-6 xl:grid-cols-[minmax(0,1.58fr)_360px] xl:items-start">
+      <div v-else class="space-y-6">
         <GameTable
           :room="room"
           :private-state="game.privateState"
@@ -61,7 +61,8 @@
           @submit-vote="game.submitVote"
           @next-round="game.nextRound"
         />
-        <div class="space-y-6">
+
+        <div class="grid gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(340px,1.1fr)] xl:items-start">
           <ScoreBoard :players="room.players" />
           <ChatPanel
             :messages="room.chat"

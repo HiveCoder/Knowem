@@ -8,11 +8,11 @@
             <span class="card-dot" :class="toneDotClass" />
           </div>
           <div class="space-y-3 text-center">
-            <p class="text-[10px] uppercase tracking-[0.34em] text-slate-500">{{ backLabel }}</p>
-            <h3 class="text-lg font-semibold tracking-tight text-white">Table Deck</h3>
-            <p class="text-xs text-slate-400">Drawn into play when the round begins.</p>
+            <p class="text-[10px] uppercase tracking-[0.34em] text-zinc-500">{{ backLabel }}</p>
+            <h3 class="text-lg font-semibold tracking-tight text-zinc-100">Table Deck</h3>
+            <p class="text-xs text-zinc-400">Clean, hidden state until the round reveals it.</p>
           </div>
-          <p class="text-center text-[11px] uppercase tracking-[0.28em] text-slate-500">Hold to reveal</p>
+          <p class="text-center text-[11px] uppercase tracking-[0.28em] text-zinc-500">Hold to reveal</p>
         </div>
       </div>
 
@@ -20,20 +20,20 @@
         <div class="card-frontdrop flex h-full flex-col justify-between rounded-[inherit] border p-4 text-current sm:p-5">
           <div class="flex items-start justify-between gap-3">
             <div>
-              <p class="text-[10px] uppercase tracking-[0.34em] opacity-70">{{ toneLabel }}</p>
-              <span class="card-chip mt-2 inline-flex !border-current/15 !bg-black/10 !text-current">{{ badgeLabel }}</span>
+              <p class="text-[10px] uppercase tracking-[0.34em] text-zinc-500">{{ toneLabel }}</p>
+              <span class="card-chip mt-2 inline-flex">{{ badgeLabel }}</span>
             </div>
             <span class="card-dot" :class="toneDotClass" />
           </div>
 
           <div class="flex flex-1 items-center justify-center py-2 text-center">
             <div>
-              <p v-if="subtitle" class="text-[11px] uppercase tracking-[0.28em] opacity-70">{{ subtitle }}</p>
-              <h3 class="mt-3 text-xl font-semibold leading-tight sm:text-[1.45rem]">{{ title }}</h3>
+              <p v-if="subtitle" class="text-[11px] uppercase tracking-[0.28em] text-zinc-500">{{ subtitle }}</p>
+              <h3 class="mt-3 text-xl font-semibold leading-tight text-zinc-100 sm:text-[1.45rem]">{{ title }}</h3>
             </div>
           </div>
 
-          <div class="flex items-center justify-between gap-3 text-[11px] uppercase tracking-[0.24em] opacity-65">
+          <div class="flex items-center justify-between gap-3 text-[11px] uppercase tracking-[0.24em] text-zinc-500">
             <span>{{ footerLabel }}</span>
             <span>{{ toneLabel }}</span>
           </div>
@@ -72,33 +72,33 @@ const props = withDefaults(
 
 const innerRef = ref<HTMLElement | null>(null)
 
-const sizeClass = computed(() => (props.size === 'sm' ? 'h-28 w-20 sm:h-32 sm:w-24' : 'h-40 w-28 sm:h-44 sm:w-32'))
+const sizeClass = computed(() => (props.size === 'sm' ? 'aspect-[3/4] w-[5.25rem] sm:w-[5.75rem]' : 'aspect-[3/4] w-[7.25rem] sm:w-[8rem]'))
 const frontToneClass = computed(() => {
   if (props.tone === 'truth') {
-    return 'text-slate-900 shadow-[0_16px_28px_rgba(15,23,42,0.16)]'
+    return 'text-zinc-100'
   }
   if (props.tone === 'false') {
-    return 'text-slate-900 shadow-[0_16px_28px_rgba(15,23,42,0.16)]'
+    return 'text-zinc-100'
   }
   if (props.tone === 'wild') {
-    return 'text-slate-900 shadow-[0_16px_28px_rgba(15,23,42,0.16)]'
+    return 'text-zinc-100'
   }
   if (props.tone === 'question') {
-    return 'text-slate-900 shadow-[0_16px_28px_rgba(15,23,42,0.16)]'
+    return 'text-zinc-100'
   }
-  return 'text-slate-900 shadow-[0_16px_28px_rgba(15,23,42,0.18)]'
+  return 'text-zinc-100'
 })
 const backToneClass = computed(() => {
   if (props.tone === 'false') {
-    return 'text-slate-100'
+    return 'text-zinc-100'
   }
   if (props.tone === 'wild') {
-    return 'text-slate-100'
+    return 'text-zinc-100'
   }
   if (props.tone === 'question') {
-    return 'text-slate-100'
+    return 'text-zinc-100'
   }
-  return 'text-slate-100'
+  return 'text-zinc-100'
 })
 
 const toneLabel = computed(() => {
@@ -180,12 +180,12 @@ onMounted(() => {
 }
 
 .card-shell:hover {
-  transform: translateY(-4px);
-  filter: brightness(1.01);
+  transform: translateY(-2px) scale(1.02);
+  filter: brightness(1.015);
 }
 
 .card-shell-selected {
-  transform: translateY(-2px);
+  transform: translateY(-1px) scale(1.02);
 }
 
 .card-inner {
@@ -198,7 +198,7 @@ onMounted(() => {
 .card-face {
   position: absolute;
   inset: 0;
-  border-radius: 1.5rem;
+  border-radius: 1rem;
   backface-visibility: hidden;
 }
 
@@ -208,8 +208,9 @@ onMounted(() => {
 
 .card-chip {
   border-radius: 9999px;
-  border: 1px solid rgba(15, 23, 42, 0.12);
-  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(63, 63, 70, 0.9);
+  background: rgba(39, 39, 42, 0.88);
+  color: rgb(212 212 216);
   padding: 0.35rem 0.7rem;
   font-size: 10px;
   font-weight: 600;
@@ -224,28 +225,27 @@ onMounted(() => {
 }
 
 .card-backdrop {
-  border-color: rgba(255, 255, 255, 0.08);
+  border-color: rgba(63, 63, 70, 0.9);
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.06) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.06) 50%, rgba(255, 255, 255, 0.06) 75%, transparent 75%, transparent),
-    linear-gradient(180deg, rgba(28, 74, 140, 0.98), rgba(19, 52, 104, 0.98));
-  background-size: 14px 14px, auto;
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.08), transparent 34%),
+    linear-gradient(180deg, rgba(24, 24, 27, 0.98), rgba(15, 15, 18, 0.98));
 }
 
 .card-frontdrop {
-  border-color: rgba(15, 23, 42, 0.14);
+  border-color: rgba(63, 63, 70, 0.9);
   background:
-    radial-gradient(circle at top, rgba(255, 255, 255, 0.92), transparent 36%),
-    linear-gradient(180deg, rgba(250, 248, 242, 0.98), rgba(239, 235, 227, 0.98));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.05), transparent 32%),
+    linear-gradient(180deg, rgba(24, 24, 27, 0.98), rgba(15, 15, 18, 0.98));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .card-back,
 .card-front {
-  box-shadow: 0 16px 26px rgba(15, 23, 42, 0.18);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
 }
 
 .card-shell-selected .card-front,
 .card-shell-selected .card-back {
-  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.12), 0 20px 30px rgba(15, 23, 42, 0.2);
+  box-shadow: 0 0 0 1px rgba(82, 82, 91, 0.9), 0 12px 22px rgba(0, 0, 0, 0.24);
 }
 </style>

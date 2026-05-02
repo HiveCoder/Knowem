@@ -32,85 +32,115 @@
       </div>
     </UiPanel>
 
-    <UiPanel padding="lg">
-      <div class="grid gap-5 xl:grid-cols-[220px_minmax(0,1fr)_220px] xl:items-stretch">
-        <div class="space-y-4">
-          <div class="rounded-[26px] border border-white/10 bg-white/[0.02] p-4">
-            <p class="text-xs uppercase tracking-[0.3em] text-slate-500">Left lane</p>
-            <div class="mt-4 space-y-4">
-              <div v-if="leftSeats.length === 0" class="rounded-[1.5rem] border border-dashed border-white/10 px-4 py-10 text-center text-sm text-slate-500">
+    <UiPanel padding="lg" class="overflow-hidden">
+      <div class="grid gap-6 lg:grid-cols-[minmax(0,0.86fr)_minmax(0,1.35fr)_minmax(0,0.86fr)] lg:items-start xl:gap-8">
+        <aside class="order-2 min-w-0 lg:order-1">
+          <div class="rounded-[28px] border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+            <div class="flex items-center justify-between gap-3">
+              <div>
+                <p class="text-xs uppercase tracking-[0.3em] text-slate-500">Left lane</p>
+                <p class="mt-2 text-sm text-slate-400">Table seats and hidden role cards.</p>
+              </div>
+              <UiBadge tone="muted">{{ leftSeats.length }} seats</UiBadge>
+            </div>
+
+            <div class="mt-5 grid gap-4 overflow-hidden lg:max-h-[38rem] lg:overflow-y-auto lg:pr-1 soft-scrollbar">
+              <div v-if="leftSeats.length === 0" class="rounded-[24px] border border-dashed border-white/10 px-4 py-10 text-center text-sm text-slate-500">
                 Empty lane
               </div>
 
-              <div v-for="seat in leftSeats" :key="seat.player.id" class="rounded-[22px] border border-white/10 bg-white/[0.03] p-4">
+              <article v-for="seat in leftSeats" :key="seat.player.id" class="overflow-hidden rounded-[24px] border border-white/10 bg-slate-950/40 p-4">
                 <div class="flex items-center justify-between gap-3">
                   <div class="min-w-0">
                     <p class="truncate font-medium text-white">{{ seat.player.username }}</p>
-                    <p class="text-[11px] uppercase tracking-[0.26em] text-slate-500">{{ seat.player.isAdjudicator ? 'reading the table' : seat.positionLabel }}</p>
+                    <p class="mt-1 text-[11px] uppercase tracking-[0.24em] text-slate-500">{{ seat.player.isAdjudicator ? 'reading the table' : seat.positionLabel }}</p>
                   </div>
-                  <div class="text-sm font-semibold text-slate-100">{{ seat.player.score }}</div>
+                  <div class="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-sm font-semibold text-slate-100">{{ seat.player.score }}</div>
                 </div>
 
-                <div class="mt-4 flex justify-center">
+                <div class="mt-4 overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.02] px-3 py-4">
                   <PlayerHand :cards="seat.cards" compact :empty-label="seat.player.isAdjudicator ? 'Judging' : 'Waiting'" :flip-key="room.game.round" />
                 </div>
+              </article>
+            </div>
+          </div>
+        </aside>
+
+        <div class="order-1 min-w-0 lg:order-2">
+          <div class="poker-table overflow-hidden rounded-[30px] border border-white/10 p-4 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.02),0_24px_60px_rgba(2,6,23,0.22)] sm:p-6">
+            <div class="grid gap-5">
+              <div class="rounded-[24px] border border-white/10 bg-[rgba(7,10,18,0.52)] px-5 py-5 text-center backdrop-blur-md sm:px-6">
+                <p class="text-xs uppercase tracking-[0.34em] text-slate-400">Focus area</p>
+                <h3 class="mt-4 text-2xl font-semibold leading-tight text-white sm:text-3xl">{{ room.game.question || 'Shuffling the next question...' }}</h3>
+                <p class="mt-3 text-sm leading-6 text-slate-300">{{ phaseTitle }}</p>
+              </div>
+
+              <div class="relative mx-auto w-full max-w-[620px] overflow-hidden rounded-[28px] border border-white/10 bg-[rgba(8,12,22,0.34)] px-4 py-5 backdrop-blur-md sm:px-6 sm:py-6">
+                <Deck :round="room.game.round" :trigger-key="lastDealtAt || room.game.round" :seats="deckTargets" />
+
+                <div class="relative z-10 flex min-h-[250px] flex-col items-center justify-center gap-4 sm:min-h-[280px]">
+                  <UiBadge tone="muted">Active cards</UiBadge>
+
+                  <div class="w-full overflow-hidden rounded-[24px] border border-white/10 bg-slate-950/45 px-4 py-6 shadow-[0_18px_40px_rgba(2,6,23,0.16)]">
+                    <PlayerHand :cards="focusCards" :empty-label="selfPlayer?.isAdjudicator ? 'Adjudicator' : 'Waiting for deal'" :flip-key="room.game.round" />
+                  </div>
+                </div>
+              </div>
+
+              <div class="grid gap-3 sm:grid-cols-3">
+                <div class="rounded-[22px] border border-white/10 bg-slate-950/35 p-4">
+                  <p class="text-[11px] uppercase tracking-[0.24em] text-slate-500">Connected</p>
+                  <p class="mt-3 text-2xl font-semibold text-white">{{ topPlayers.length }}</p>
+                </div>
+                <div class="rounded-[22px] border border-white/10 bg-slate-950/35 p-4">
+                  <p class="text-[11px] uppercase tracking-[0.24em] text-slate-500">Answers ready</p>
+                  <p class="mt-3 text-2xl font-semibold text-white">{{ judgableAnswers.length }}</p>
+                </div>
+                <div class="rounded-[22px] border border-white/10 bg-slate-950/35 p-4">
+                  <p class="text-[11px] uppercase tracking-[0.24em] text-slate-500">Your seat</p>
+                  <p class="mt-3 text-lg font-semibold text-white">{{ selfPlayer?.isAdjudicator ? 'Judge' : 'Contestant' }}</p>
+                  <p class="mt-1 text-xs text-slate-400">{{ selfPlayer?.hasAnswered ? 'Locked in' : 'Awaiting action' }}</p>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div class="poker-table rounded-[32px] border border-white/10 p-4 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.02),0_24px_60px_rgba(2,6,23,0.22)] sm:p-6">
-          <div class="grid gap-4">
-            <div class="rounded-[28px] border border-white/10 bg-[rgba(8,12,22,0.42)] px-5 py-6 text-center backdrop-blur-md">
-              <p class="text-xs uppercase tracking-[0.34em] text-slate-400">Focus area</p>
-              <h3 class="mt-4 text-2xl font-semibold leading-tight text-white sm:text-3xl">{{ room.game.question || 'Shuffling the next question...' }}</h3>
-              <p class="mt-4 text-sm text-slate-300">{{ phaseTitle }}</p>
-            </div>
-
-            <div class="relative mx-auto min-h-[280px] w-full max-w-[420px] rounded-[28px] border border-white/10 bg-[rgba(8,12,22,0.34)] px-4 py-6 backdrop-blur-md sm:min-h-[320px]">
-              <Deck :round="room.game.round" :trigger-key="lastDealtAt || room.game.round" :seats="deckTargets" />
-
-              <div class="relative z-10 flex h-full flex-col items-center justify-center gap-5">
-                <div class="rounded-full border border-[rgba(124,156,255,0.20)] bg-[rgba(124,156,255,0.12)] px-4 py-2 text-xs uppercase tracking-[0.28em] text-blue-100">
-                  Active cards
-                </div>
-
-                <div class="rounded-[24px] border border-white/10 bg-[rgba(8,12,22,0.48)] px-4 py-5 shadow-[0_18px_50px_rgba(2,6,23,0.18)]">
-                  <PlayerHand :cards="focusCards" :empty-label="selfPlayer?.isAdjudicator ? 'Adjudicator' : 'Waiting for deal'" :flip-key="room.game.round" />
-                </div>
+        <aside class="order-3 min-w-0">
+          <div class="rounded-[28px] border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+            <div class="flex items-center justify-between gap-3">
+              <div>
+                <p class="text-xs uppercase tracking-[0.3em] text-slate-500">Right lane</p>
+                <p class="mt-2 text-sm text-slate-400">Mirror lane for the rest of the table.</p>
               </div>
+              <UiBadge tone="muted">{{ rightSeats.length }} seats</UiBadge>
             </div>
-          </div>
-        </div>
 
-        <div class="space-y-4">
-          <div class="rounded-[26px] border border-white/10 bg-white/[0.02] p-4">
-            <p class="text-xs uppercase tracking-[0.3em] text-slate-500">Right lane</p>
-            <div class="mt-4 space-y-4">
-              <div v-if="rightSeats.length === 0" class="rounded-[1.5rem] border border-dashed border-white/10 px-4 py-10 text-center text-sm text-slate-500">
+            <div class="mt-5 grid gap-4 overflow-hidden lg:max-h-[38rem] lg:overflow-y-auto lg:pr-1 soft-scrollbar">
+              <div v-if="rightSeats.length === 0" class="rounded-[24px] border border-dashed border-white/10 px-4 py-10 text-center text-sm text-slate-500">
                 Empty lane
               </div>
 
-              <div v-for="seat in rightSeats" :key="seat.player.id" class="rounded-[22px] border border-white/10 bg-white/[0.03] p-4">
+              <article v-for="seat in rightSeats" :key="seat.player.id" class="overflow-hidden rounded-[24px] border border-white/10 bg-slate-950/40 p-4">
                 <div class="flex items-center justify-between gap-3">
                   <div class="min-w-0">
                     <p class="truncate font-medium text-white">{{ seat.player.username }}</p>
-                    <p class="text-[11px] uppercase tracking-[0.26em] text-slate-500">{{ seat.player.isAdjudicator ? 'reading the table' : seat.positionLabel }}</p>
+                    <p class="mt-1 text-[11px] uppercase tracking-[0.24em] text-slate-500">{{ seat.player.isAdjudicator ? 'reading the table' : seat.positionLabel }}</p>
                   </div>
-                  <div class="text-sm font-semibold text-slate-100">{{ seat.player.score }}</div>
+                  <div class="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-sm font-semibold text-slate-100">{{ seat.player.score }}</div>
                 </div>
 
-                <div class="mt-4 flex justify-center">
+                <div class="mt-4 overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.02] px-3 py-4">
                   <PlayerHand :cards="seat.cards" compact :empty-label="seat.player.isAdjudicator ? 'Judging' : 'Waiting'" :flip-key="room.game.round" />
                 </div>
-              </div>
+              </article>
             </div>
           </div>
-        </div>
+        </aside>
       </div>
     </UiPanel>
 
-    <div class="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+    <div class="grid gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
       <UiPanel padding="lg">
         <div class="flex items-center justify-between gap-3">
           <div>
@@ -172,7 +202,7 @@
           <UiBadge tone="muted">Hover cards</UiBadge>
         </div>
 
-        <div class="mt-6 flex justify-center rounded-[30px] border border-white/10 bg-[rgba(8,12,22,0.42)] px-4 py-8">
+        <div class="mt-6 overflow-hidden rounded-[28px] border border-white/10 bg-[rgba(8,12,22,0.42)] px-4 py-6 sm:px-6">
           <PlayerHand :cards="selfCards" :empty-label="selfPlayer?.isAdjudicator ? 'Adjudicator' : 'Waiting for deal'" :flip-key="room.game.round" />
         </div>
         <p class="mt-5 text-sm text-slate-400">{{ statusLine }}</p>
