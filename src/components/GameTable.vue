@@ -255,11 +255,14 @@ const phaseTitle = computed(() => {
     return 'Judge the room.'
   }
   if (props.room.game.phase === 'results') {
-    return 'Round results.'
+    return 'Verdicts are in. Review the swing, then reset for the next deal.'
   }
   return 'Waiting for the room.'
 })
 const statusLine = computed(() => {
+  if (props.room.game.phase === 'results') {
+    return 'Round scoring is settled. Review the recap, watch the standings shift, and get ready for the next question.'
+  }
   if (selfPlayer.value?.hasAnswered) {
     return 'Your answer is locked. Watch the table and prepare for the verdict.'
   }
