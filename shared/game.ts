@@ -126,6 +126,20 @@ export interface ChatPayload {
   toPlayerId?: string
 }
 
+export interface ChatTypingPayload {
+  roomCode: string
+  isTyping: boolean
+  toPlayerId?: string
+}
+
+export interface ChatTypingEvent {
+  roomCode: string
+  fromPlayerId: string
+  fromUsername: string
+  isTyping: boolean
+  toPlayerId?: string
+}
+
 export interface UpdateBotSettingsPayload {
   roomCode: string
   difficulty?: BotDifficulty

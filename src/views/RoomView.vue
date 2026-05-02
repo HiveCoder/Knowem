@@ -64,15 +64,24 @@
 
         <div class="grid gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(340px,1.1fr)] xl:items-start">
           <ScoreBoard :players="room.players" />
-          <ChatPanel
-            :messages="room.chat"
-            :players="room.players"
-            :self-id="game.playerId"
-            :allow-bot-direct-messages="room.botSettings.allowBotDirectMessages"
-            @send="game.sendChatMessage"
-          />
+          <div class="rounded-[28px] border border-white/10 bg-white/[0.03] p-5 text-sm text-slate-400">
+            Messenger-style room chat is active as a floating popup so it stays accessible without crowding the table.
+          </div>
         </div>
+
       </div>
+
+      <ChatPanel
+        :messages="room.chat"
+        :players="room.players"
+        :self-id="game.playerId"
+        :allow-bot-direct-messages="room.botSettings.allowBotDirectMessages"
+        :room-code="room.code"
+        :room-name="room.name"
+        :typing-players="game.typingPresence"
+        @send="game.sendChatMessage"
+        @typing="game.sendChatTyping"
+      />
     </div>
   </div>
 
