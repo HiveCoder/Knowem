@@ -26,9 +26,9 @@
           :badge-label="card.badgeLabel || 'Knowem'"
         />
 
-        <div v-if="layout === 'focus'" class="mt-4 flex flex-col items-center gap-1 px-2 text-center">
-          <p class="text-sm font-semibold leading-5 text-slate-100">{{ card.title }}</p>
-          <p v-if="card.subtitle" class="max-w-[12rem] text-xs leading-5 text-slate-400">{{ card.subtitle }}</p>
+        <div v-if="layout === 'focus'" class="mt-3 flex flex-col items-center gap-1 px-2 text-center">
+          <p class="text-sm font-medium leading-5 text-slate-100 sm:text-[0.95rem]">{{ card.title }}</p>
+          <p v-if="card.subtitle" class="max-w-[11rem] text-[11px] leading-4 text-slate-400 sm:text-xs">{{ card.subtitle }}</p>
         </div>
       </div>
     </div>

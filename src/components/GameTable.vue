@@ -87,9 +87,7 @@
                     <div class="pointer-events-none absolute inset-x-6 top-6 h-px bg-white/8" />
                     <div class="pointer-events-none absolute inset-x-6 bottom-6 h-px bg-white/8" />
 
-                    <div class="relative z-10 flex w-full max-w-[34rem] flex-col items-center gap-4 text-center">
-                      <h3 class="text-lg font-semibold text-white sm:text-xl">Center play area</h3>
-                      <p class="max-w-[32rem] text-sm leading-6 text-slate-400">Cards reflow automatically to keep spacing, centering, and readability intact.</p>
+                    <div class="relative z-10 flex w-full max-w-[34rem] flex-col items-center text-center">
                       <PlayerHand :cards="focusCards" layout="focus" :empty-label="selfPlayer?.isAdjudicator ? 'Adjudicator' : 'Waiting for deal'" :flip-key="room.game.round" />
                     </div>
                   </div>
