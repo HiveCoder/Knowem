@@ -156,10 +156,10 @@
             rows="5"
             class="input-shell resize-none"
             :disabled="!canAnswer"
-            placeholder="Your answer goes here. Sell the lie or own the truth."
+            :placeholder="props.privateState?.wildCard === 'safe_pass' ? 'Type an answer or leave blank to safe pass.' : 'Your answer goes here. Sell the lie or own the truth.'"
           />
           <UiButton variant="primary" block :disabled="!canSubmitAnswer" @click="submitOwnAnswer">
-            {{ selfPlayer?.hasAnswered ? 'Answer locked in' : 'Submit answer' }}
+            {{ selfPlayer?.hasAnswered ? 'Answer locked in' : props.privateState?.wildCard === 'safe_pass' ? 'Submit answer or pass' : 'Submit answer' }}
           </UiButton>
           <p class="text-sm text-slate-400">{{ statusLine }}</p>
         </div>
@@ -223,6 +223,59 @@ import UiButton from '@/components/ui/UiButton.vue'
 import UiPanel from '@/components/ui/UiPanel.vue'
 import type { PrivateState, RoomState } from '@/types/game'
 
+const WILD_CARD_DETAILS = {
+  forced_truth: {
+    title: 'Forced Truth',
+    subtitle: 'Truth overrides your base role',
+    status: 'Forced Truth is active. Your role resolves as truth this round.',
+  },
+  forced_bluff: {
+    title: 'Forced Bluff',
+    subtitle: 'Lie even if your base card says truth',
+    status: 'Forced Bluff is active. Your role resolves as a lie this round.',
+  },
+  counter: {
+    title: 'Counter Card',
+    subtitle: 'Blocks judge bonus on a correct read',
+    status: 'Counter is active. A correct read on you does not pay the adjudicator.',
+  },
+  double_bluff: {
+    title: 'Double Bluff',
+    subtitle: 'Missed lies pay out extra',
+    status: 'Double Bluff is active. If your lie lands, it earns bonus player points.',
+  },
+  echo: {
+    title: 'Echo',
+    subtitle: 'A miss against you pays an echo bonus',
+    status: 'Echo is active. A missed read on you pays an extra point.',
+  },
+  misdirect: {
+    title: 'Misdirect',
+    subtitle: 'Your revealed role flips for scoring',
+    status: 'Misdirect is active. Your role is flipped during scoring.',
+  },
+  reverse_read: {
+    title: 'Reverse Read',
+    subtitle: 'The judge call flips before scoring',
+    status: 'Reverse Read is active. The adjudicator call is inverted against you.',
+  },
+  safe_pass: {
+    title: 'Safe Pass',
+    subtitle: 'You can pass and still bank a guarded point',
+    status: 'Safe Pass is active. You may submit no answer and still lock in a guarded point.',
+  },
+  silencer: {
+    title: 'Silencer',
+    subtitle: 'Your answer text stays hidden while judging',
+    status: 'Silencer is active. The adjudicator reads your role without seeing your text.',
+  },
+  spotlight: {
+    title: 'Spotlight',
+    subtitle: 'This read pays double stakes',
+    status: 'Spotlight is active. The score swing on your read is doubled.',
+  },
+} as const
+
 const props = defineProps<{
   room: RoomState
   privateState: PrivateState | null
@@ -270,7 +323,13 @@ const canAnswer = computed(() => {
   }
   return props.room.game.phase === 'question_reveal' || props.room.game.phase === 'answer_phase'
 })
-const canSubmitAnswer = computed(() => canAnswer.value && draftAnswer.value.trim().length > 2 && !selfPlayer.value?.hasAnswered)
+const canSubmitAnswer = computed(() => {
+  if (!canAnswer.value || selfPlayer.value?.hasAnswered) {
+    return false
+  }
+
+  return draftAnswer.value.trim().length > 2 || props.privateState?.wildCard === 'safe_pass'
+})
 const judgableAnswers = computed(() => props.room.players.filter((player) => !player.isAdjudicator && player.answerText))
 const canSubmitVotes = computed(() => judgableAnswers.value.length > 0 && judgableAnswers.value.every((player) => guesses[player.id]))
 const phaseLabel = computed(() => props.room.game.phase.replace('_', ' '))
@@ -296,11 +355,8 @@ const statusLine = computed(() => {
   if (selfPlayer.value?.hasAnswered) {
     return 'Your answer is locked. Watch the table and prepare for the verdict.'
   }
-  if (props.privateState?.wildCard === 'forced_truth') {
-    return 'Forced Truth overrides your role this round. Answer honestly.'
-  }
-  if (props.privateState?.wildCard === 'counter') {
-    return 'Counter card is active this round. Wild effects bounce off you.'
+  if (props.privateState?.wildCard) {
+    return describeWildCard(props.privateState.wildCard).status
   }
   return 'Answer in text now. Voice room can be layered in later without changing the state model.'
 })
@@ -355,6 +411,7 @@ function handCardsForPlayer(player: RoomState['players'][number] | null, isSelf:
   }
 
   if (isSelf) {
+    const wildDetails = describeWildCard(props.privateState?.wildCard ?? null)
     return [
       {
         id: `${player.id}-primary`,
@@ -366,18 +423,8 @@ function handCardsForPlayer(player: RoomState['players'][number] | null, isSelf:
       },
       {
         id: `${player.id}-wild`,
-        title:
-          props.privateState?.wildCard === 'forced_truth'
-            ? 'Forced Truth'
-            : props.privateState?.wildCard === 'counter'
-              ? 'Counter Card'
-              : 'No Wild',
-        subtitle:
-          props.privateState?.wildCard === 'forced_truth'
-            ? 'Truth overrides role'
-            : props.privateState?.wildCard === 'counter'
-              ? 'Negates an incoming wild'
-              : 'No modifier this round',
+        title: wildDetails.title,
+        subtitle: wildDetails.subtitle,
         tone: 'wild',
         revealed: true,
         badgeLabel: 'Wild',
@@ -386,6 +433,7 @@ function handCardsForPlayer(player: RoomState['players'][number] | null, isSelf:
   }
 
   if (props.room.game.phase === 'results' && player.primaryCardKnown) {
+    const wildDetails = describeWildCard(player.wildCardKnown ?? null)
     return [
       {
         id: `${player.id}-primary-known`,
@@ -397,13 +445,8 @@ function handCardsForPlayer(player: RoomState['players'][number] | null, isSelf:
       },
       {
         id: `${player.id}-wild-known`,
-        title:
-          player.wildCardKnown === 'forced_truth'
-            ? 'Forced Truth'
-            : player.wildCardKnown === 'counter'
-              ? 'Counter Card'
-              : 'No Wild',
-        subtitle: player.wildCardKnown ? 'Shown at reveal' : 'No modifier',
+        title: wildDetails.title,
+        subtitle: player.wildCardKnown ? wildDetails.subtitle : 'No modifier this round',
         tone: 'wild',
         revealed: true,
         badgeLabel: 'Wild',
@@ -462,6 +505,18 @@ function submitOwnAnswer() {
     return
   }
   emit('submitAnswer', draftAnswer.value.trim())
+}
+
+function describeWildCard(wildCard: PrivateState['wildCard']) {
+  if (!wildCard) {
+    return {
+      title: 'No Wild',
+      subtitle: 'No modifier this round',
+      status: 'No wild modifier is active this round.',
+    }
+  }
+
+  return WILD_CARD_DETAILS[wildCard]
 }
 
 function submitJudgement() {

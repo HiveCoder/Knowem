@@ -69,6 +69,19 @@ const BOT_DIFFICULTY_ACCURACY: Record<BotDifficulty, number> = {
   hard: 0.82,
 }
 
+const WILD_CARD_POOL: WildCard[] = [
+  'forced_truth',
+  'forced_bluff',
+  'counter',
+  'double_bluff',
+  'echo',
+  'misdirect',
+  'reverse_read',
+  'safe_pass',
+  'silencer',
+  'spotlight',
+]
+
 const BOT_PERSONALITIES: Array<{
   id: BotPersonalityId
   label: string
@@ -344,10 +357,15 @@ export class GameEngine {
       throw new Error('Adjudicator cannot submit an answer.')
     }
 
-    const effectiveRole: EffectiveRole = player.wildCard === 'forced_truth' ? 'truth' : (player.primaryCard ?? 'truth')
+    const effectiveRole = resolveEffectiveRole(player.primaryCard, player.wildCard)
+    const submittedAnswer = payload.answer.trim() || (player.wildCard === 'safe_pass' ? 'Safe pass. Staying unreadable this round.' : '')
+
+    if (!submittedAnswer) {
+      throw new Error('Answer cannot be empty.')
+    }
 
     player.answer = {
-      text: payload.answer.trim(),
+      text: submittedAnswer,
       submittedAt: Date.now(),
       effectiveRole,
     }
@@ -368,6 +386,10 @@ export class GameEngine {
       for (const reactor of reactors) {
         this.pushBotChat(room, reactor, this.generateAnswerReaction(room.game.question ?? 'that prompt', player.username))
       }
+    }
+
+    if (player.wildCard === 'echo') {
+      this.pushSystemLikeBotMessage(room, player, `Echo carries ${player.username}'s answer across the table: "${submittedAnswer}"`)
     }
 
     this.progressBots(room)
@@ -437,21 +459,25 @@ export class GameEngine {
       }
 
       const guessedRole = guesses[player.id] ?? 'truth'
-      const actualRole = player.answer.effectiveRole
-      const correct = guessedRole === actualRole
-      const awardedToAdjudicator = correct ? 2 : 0
-      const awardedToPlayer = actualRole === 'false' && !correct ? 3 : actualRole === 'truth' && correct ? 1 : 0
+      const outcome = resolveWildOutcome({
+        guessedRole,
+        actualRole: player.answer.effectiveRole,
+        wildCard: player.wildCard,
+        answerText: player.answer.text,
+      })
 
-      adjudicator.score += awardedToAdjudicator
-      player.score += awardedToPlayer
+      adjudicator.score += outcome.awardedToAdjudicator
+      player.score += outcome.awardedToPlayer
 
       results.push({
         playerId: player.id,
         username: player.username,
         guessedRole,
-        actualRole,
-        awardedToAdjudicator,
-        awardedToPlayer,
+        actualRole: outcome.actualRole,
+        awardedToAdjudicator: outcome.awardedToAdjudicator,
+        awardedToPlayer: outcome.awardedToPlayer,
+        wildCard: player.wildCard,
+        effectSummary: outcome.effectSummary,
       })
     }
 
@@ -580,7 +606,7 @@ export class GameEngine {
         hasAnswered: Boolean(player.answer),
         answerText:
           room.game.phase === 'judging_phase' || room.game.phase === 'results'
-            ? player.answer?.text
+            ? getVisibleAnswerText(player, room.game.phase)
             : undefined,
         primaryCardKnown: room.game.phase === 'results' ? player.primaryCard ?? undefined : undefined,
         wildCardKnown: room.game.phase === 'results' ? player.wildCard : undefined,
@@ -608,13 +634,11 @@ export class GameEngine {
 
   private rollWildCard(): WildCard {
     const roll = Math.random()
-    if (roll > 0.83) {
-      return 'forced_truth'
+    if (roll > 0.58) {
+      return null
     }
-    if (roll > 0.68) {
-      return 'counter'
-    }
-    return null
+
+    return sample(WILD_CARD_POOL)
   }
 
   private progressBots(room: Room) {
@@ -628,14 +652,19 @@ export class GameEngine {
           continue
         }
 
-        const effectiveRole: EffectiveRole = player.wildCard === 'forced_truth' ? 'truth' : (player.primaryCard ?? 'truth')
+        const effectiveRole = resolveEffectiveRole(player.primaryCard, player.wildCard)
+        const answerText = this.generateBotAnswer(player, room.game.question ?? 'Tell the story.', effectiveRole)
         player.answer = {
-          text: this.generateBotAnswer(player, room.game.question ?? 'Tell the story.', effectiveRole),
+          text: player.wildCard === 'safe_pass' ? 'Safe pass. No tells this time.' : answerText,
           submittedAt: Date.now(),
           effectiveRole,
         }
         room.game.phase = 'answer_phase'
         this.pushBotChat(room, player, this.generateLockInComment(player))
+
+        if (player.wildCard === 'echo') {
+          this.pushSystemLikeBotMessage(room, player, `Echo carries ${player.username}'s answer across the table: "${player.answer.text}"`)
+        }
       }
 
       const pending = [...room.players.values()].filter(
@@ -810,4 +839,106 @@ function clampTargetCount(value: number, maxPlayers: number) {
 
 function clampProbability(value: number) {
   return Math.min(0.95, Math.max(0.05, value))
+}
+
+function resolveEffectiveRole(primaryCard: PrimaryCard | null, wildCard: WildCard): EffectiveRole {
+  if (wildCard === 'forced_truth') {
+    return 'truth'
+  }
+
+  if (wildCard === 'forced_bluff' || wildCard === 'double_bluff') {
+    return 'false'
+  }
+
+  return primaryCard ?? 'truth'
+}
+
+function getVisibleAnswerText(player: Player, phase: GameState['phase']) {
+  if (!player.answer) {
+    return undefined
+  }
+
+  if (phase === 'judging_phase' && player.wildCard === 'silencer') {
+    return 'Silenced answer. Judge the role without the text.'
+  }
+
+  return player.answer.text
+}
+
+function resolveWildOutcome(input: {
+  guessedRole: EffectiveRole
+  actualRole: EffectiveRole
+  wildCard: WildCard
+  answerText: string
+}) {
+  let evaluatedGuess = input.guessedRole
+  let evaluatedActual = input.actualRole
+  let effectSummary: string | undefined
+
+  if (input.wildCard === 'misdirect') {
+    evaluatedActual = oppositeRole(evaluatedActual)
+    effectSummary = 'Misdirect flipped the revealed read for scoring.'
+  }
+
+  if (input.wildCard === 'reverse_read') {
+    evaluatedGuess = oppositeRole(evaluatedGuess)
+    effectSummary = 'Reverse Read inverted the judge call before scoring.'
+  }
+
+  const correct = evaluatedGuess === evaluatedActual
+  let awardedToAdjudicator = correct ? 2 : 0
+  let awardedToPlayer = evaluatedActual === 'false' && !correct ? 3 : evaluatedActual === 'truth' && correct ? 1 : 0
+
+  switch (input.wildCard) {
+    case 'counter':
+      if (correct) {
+        awardedToAdjudicator = 0
+        effectSummary = 'Counter blocked the judge bonus.'
+      }
+      break
+    case 'double_bluff':
+      if (evaluatedActual === 'false' && !correct) {
+        awardedToPlayer += 2
+        effectSummary = 'Double Bluff paid extra for a missed lie.'
+      }
+      break
+    case 'echo':
+      if (!correct) {
+        awardedToPlayer += 1
+        effectSummary = 'Echo amplified the miss into a bonus point.'
+      }
+      break
+    case 'safe_pass':
+      if (input.answerText.toLowerCase().startsWith('safe pass')) {
+        awardedToPlayer = Math.max(awardedToPlayer, 1)
+        effectSummary = 'Safe Pass guaranteed a point for staying guarded.'
+      }
+      break
+    case 'silencer':
+      if (!correct) {
+        awardedToPlayer += 1
+        effectSummary = 'Silencer hid the answer and added pressure to the read.'
+      }
+      break
+    case 'spotlight':
+      awardedToAdjudicator *= 2
+      awardedToPlayer *= 2
+      effectSummary = 'Spotlight doubled the stakes on this read.'
+      break
+    case 'forced_truth':
+      effectSummary = 'Forced Truth overrode the base role.'
+      break
+    case 'forced_bluff':
+      effectSummary = 'Forced Bluff overrode the base role.'
+      break
+    default:
+      break
+  }
+
+  return {
+    actualRole: evaluatedActual,
+    awardedToAdjudicator,
+    awardedToPlayer,
+    effectSummary,
+  }
 }

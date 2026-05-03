@@ -21,7 +21,7 @@
     />
 
     <div
-      v-for="card in flightCards"
+      v-for="card in dealSequence"
       :key="card.id"
       :ref="registerFlightRef"
       class="absolute left-1/2 top-1/2 h-20 w-28 -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl shadow-[0_10px_20px_rgba(0,0,0,0.18)] opacity-0 will-change-transform sm:h-24 sm:w-36"
@@ -53,15 +53,27 @@ const stackRefs = ref<HTMLElement[]>([])
 const flightRefs = ref<HTMLElement[]>([])
 const anchorRefs = new Map<string, HTMLElement>()
 
-const flightCards = computed(() =>
-  props.seats.flatMap((seat) =>
-    Array.from({ length: seat.cardCount }, (_value, cardIndex) => ({
-      id: `${seat.id}-${cardIndex}`,
-      seatId: seat.id,
-      cardIndex,
-    })),
-  ),
-)
+const dealSequence = computed(() => {
+  const maxCardCount = props.seats.reduce((highestCount, seat) => Math.max(highestCount, seat.cardCount), 0)
+  const sequence: Array<{ id: string; seatId: string; cardIndex: number; order: number }> = []
+
+  for (let cardIndex = 0; cardIndex < maxCardCount; cardIndex += 1) {
+    for (const seat of props.seats) {
+      if (cardIndex >= seat.cardCount) {
+        continue
+      }
+
+      sequence.push({
+        id: `${seat.id}-${cardIndex}`,
+        seatId: seat.id,
+        cardIndex,
+        order: sequence.length,
+      })
+    }
+  }
+
+  return sequence
+})
 
 const deckArtStyle = {
   backgroundImage: `url(${deckBackImage})`,
@@ -103,21 +115,21 @@ async function runDealAnimation() {
     return
   }
 
-  const centerX = 0
-  const centerY = 0
+  const dealerOriginX = 0
+  const dealerOriginY = -82
 
   gsap.killTweensOf([...stackRefs.value, ...flightRefs.value])
   gsap.set(stackRefs.value, {
     x: 0,
-    y: 0,
+    y: dealerOriginY,
     rotate: 0,
     opacity: 1,
     zIndex: (_index: number, _target: Element, targets: Element[]) => targets.length,
   })
 
   gsap.set(flightRefs.value, {
-    x: 0,
-    y: 0,
+    x: dealerOriginX,
+    y: dealerOriginY,
     rotate: 0,
     opacity: 0,
     zIndex: 50,
@@ -148,7 +160,7 @@ async function runDealAnimation() {
     )
     .to(stackRefs.value, {
       x: 0,
-      y: 0,
+      y: dealerOriginY,
       rotate: 0,
       duration: 0.22,
       ease: 'power2.out',
@@ -158,7 +170,7 @@ async function runDealAnimation() {
   await shuffleTimeline.then()
 
   flightRefs.value.forEach((element, index) => {
-    const card = flightCards.value[index]
+    const card = dealSequence.value[index]
     const anchor = card ? anchorRefs.get(card.seatId) : null
     if (!anchor || !tableRef.value) {
       return
@@ -168,19 +180,22 @@ async function runDealAnimation() {
     const anchorBounds = anchor.getBoundingClientRect()
     const targetX = anchorBounds.left + anchorBounds.width / 2 - (tableBounds.left + tableBounds.width / 2)
     const targetY = anchorBounds.top + anchorBounds.height / 2 - (tableBounds.top + tableBounds.height / 2)
-    const seatOffset = (card.cardIndex - (Math.max(card.cardCount ?? 2, 2) - 1) / 2) * 18
+    const seat = props.seats.find((entry) => entry.id === card.seatId)
+    const totalCards = Math.max(seat?.cardCount ?? 2, 2)
+    const seatOffset = (card.cardIndex - (totalCards - 1) / 2) * 18
     const finalX = targetX + seatOffset
-    const arcY = targetY - 34 - Math.abs(finalX) * 0.04
+    const midpointX = finalX * 0.34
+    const arcY = targetY - 42 - Math.abs(finalX) * 0.06
 
     gsap.fromTo(
       element,
-      { opacity: 1, x: centerX, y: centerY - 8, rotate: gsap.utils.random(-4, 4), scale: 1 },
+      { opacity: 1, x: dealerOriginX, y: dealerOriginY, rotate: gsap.utils.random(-7, 7), scale: 1 },
       {
         keyframes: [
-          { x: finalX * 0.42, y: arcY, rotate: gsap.utils.random(-5, 5), duration: 0.18, ease: 'power1.out' },
-          { x: finalX, y: targetY, rotate: gsap.utils.random(-3, 3), duration: 0.22, ease: 'power2.out' },
+          { x: midpointX, y: arcY, rotate: gsap.utils.random(-10, 10), duration: 0.12, ease: 'power1.out' },
+          { x: finalX, y: targetY, rotate: gsap.utils.random(-4, 4), duration: 0.16, ease: 'power2.out' },
         ],
-        delay: index * 0.11,
+        delay: index * 0.085,
         onStart: () => emitSound('deal'),
         onComplete: () => {
           gsap.to(element, { opacity: 0, duration: 0.08, delay: 0.03 })

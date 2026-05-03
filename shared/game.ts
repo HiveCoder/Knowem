@@ -1,7 +1,18 @@
 export type Phase = 'waiting' | 'question_reveal' | 'answer_phase' | 'judging_phase' | 'results'
 
 export type PrimaryCard = 'truth' | 'false'
-export type WildCard = 'forced_truth' | 'counter' | null
+export type WildCard =
+  | 'forced_truth'
+  | 'forced_bluff'
+  | 'counter'
+  | 'double_bluff'
+  | 'echo'
+  | 'misdirect'
+  | 'reverse_read'
+  | 'safe_pass'
+  | 'silencer'
+  | 'spotlight'
+  | null
 export type EffectiveRole = 'truth' | 'false'
 export type BotDifficulty = 'easy' | 'medium' | 'hard'
 export type BotPersonalityId = 'bluffer' | 'oversharer' | 'hawk'
@@ -70,6 +81,8 @@ export interface RoundResult {
   actualRole: EffectiveRole
   awardedToAdjudicator: number
   awardedToPlayer: number
+  wildCard: WildCard
+  effectSummary?: string
 }
 
 export interface GameState {

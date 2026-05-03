@@ -51,11 +51,15 @@
                   <span class="pill" :class="result.actualRole === 'false' ? '!border-rose-400/20 !bg-rose-400/10 !text-rose-200' : '!border-cyan-400/20 !bg-cyan-400/10 !text-cyan-200'">
                     {{ roleLabel(result.actualRole) }}
                   </span>
+                  <span v-if="result.wildCard" class="pill !border-amber-400/20 !bg-amber-400/10 !text-amber-100">
+                    {{ wildLabel(result.wildCard) }}
+                  </span>
                 </div>
                 <p class="mt-3 text-sm text-slate-300">
                   Judge called <span class="font-medium text-white">{{ roleLabel(result.guessedRole) }}</span>
                   and the table revealed <span class="font-medium text-white">{{ roleLabel(result.actualRole) }}</span>.
                 </p>
+                <p v-if="result.effectSummary" class="mt-2 text-sm text-amber-100/85">{{ result.effectSummary }}</p>
               </div>
 
               <div class="grid gap-3 sm:grid-cols-2 lg:min-w-[280px]">
@@ -121,6 +125,17 @@ const totalPointsAwarded = computed(() =>
 
 function roleLabel(role: RoundResult['actualRole']) {
   return role === 'false' ? 'Lie' : 'Truth'
+}
+
+function wildLabel(wildCard: RoundResult['wildCard']) {
+  if (!wildCard) {
+    return 'No Wild'
+  }
+
+  return wildCard
+    .split('_')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ')
 }
 
 function resultLabel(result: RoundResult) {
