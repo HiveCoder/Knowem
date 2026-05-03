@@ -1,5 +1,5 @@
 import type { Server } from 'socket.io'
-import type { AdjudicatorVotePayload, ChatPayload, ChatTypingPayload, JoinRoomPayload, SubmitAnswerPayload, UpdateBotSettingsPayload } from '../shared/game.js'
+import type { AdjudicatorVotePayload, ChatPayload, JoinRoomPayload, SubmitAnswerPayload, UpdateBotSettingsPayload } from '../shared/game.js'
 import { GameEngine } from './gameEngine.js'
 
 export function registerSocketHandlers(io: Server, engine: GameEngine) {
@@ -151,40 +151,6 @@ export function registerSocketHandlers(io: Server, engine: GameEngine) {
         }
       } catch (error) {
         socket.emit('room_error', error instanceof Error ? error.message : 'Unable to send message.')
-      }
-    })
-
-    socket.on('chat_typing', (payload: ChatTypingPayload) => {
-      try {
-        if (!currentPlayerId) {
-          return
-        }
-        const room = engine.getRoomState(payload.roomCode)
-        const sender = room.players.find((player) => player.id === currentPlayerId)
-        if (!sender) {
-          return
-        }
-
-        const event = {
-          roomCode: payload.roomCode,
-          fromPlayerId: currentPlayerId,
-          fromUsername: sender.username,
-          isTyping: payload.isTyping,
-          toPlayerId: payload.toPlayerId,
-        }
-
-        if (payload.toPlayerId) {
-          const target = engine.listRoomPlayers(payload.roomCode).find((player) => player.id === payload.toPlayerId)
-          if (target?.connected && !target.isBot) {
-            io.to(target.socketId).emit('chat_typing', event)
-          }
-          socket.emit('chat_typing', event)
-          return
-        }
-
-        socket.to(payload.roomCode).emit('chat_typing', event)
-      } catch {
-        // Typing events are best-effort and should never disrupt room flow.
       }
     })
 

@@ -75,21 +75,14 @@
                 <p class="mt-3 text-sm leading-6 text-slate-300">{{ phaseTitle }}</p>
               </div>
 
-              <div class="relative mx-auto w-full max-w-[664px] overflow-hidden rounded-[28px] border border-white/10 bg-[rgba(8,12,22,0.34)] px-4 py-5 backdrop-blur-md sm:px-6 sm:py-6">
+              <div class="relative mx-auto w-full max-w-[580px] overflow-hidden rounded-[28px] border border-white/10 bg-[rgba(8,12,22,0.34)] px-4 py-5 backdrop-blur-md sm:px-5 sm:py-5">
                 <Deck :round="room.game.round" :trigger-key="lastDealtAt || room.game.round" :seats="deckTargets" />
 
-                <div class="relative z-10 grid min-h-[296px] grid-rows-[auto_1fr] items-start gap-4">
-                  <div class="flex justify-center">
-                    <UiBadge tone="muted">Active cards</UiBadge>
-                  </div>
+                <div class="relative z-10 flex min-h-[250px] flex-col items-center justify-center gap-4 sm:min-h-[280px]">
+                  <UiBadge tone="muted">Active cards</UiBadge>
 
-                  <div class="relative isolate grid min-h-[240px] place-items-center overflow-hidden rounded-[24px] border border-white/10 bg-slate-950/45 px-4 py-6 shadow-[0_16px_32px_rgba(2,6,23,0.14)] sm:px-6">
-                    <div class="pointer-events-none absolute inset-x-6 top-6 h-px bg-white/8" />
-                    <div class="pointer-events-none absolute inset-x-6 bottom-6 h-px bg-white/8" />
-
-                    <div class="relative z-10 flex w-full max-w-[34rem] flex-col items-center text-center">
-                      <PlayerHand :cards="focusCards" layout="focus" :empty-label="selfPlayer?.isAdjudicator ? 'Adjudicator' : 'Waiting for deal'" :flip-key="room.game.round" />
-                    </div>
+                  <div class="w-full overflow-hidden rounded-[24px] border border-white/10 bg-slate-950/45 px-3 py-5 shadow-[0_18px_40px_rgba(2,6,23,0.16)] sm:px-4">
+                    <PlayerHand :cards="focusCards" :empty-label="selfPlayer?.isAdjudicator ? 'Adjudicator' : 'Waiting for deal'" :flip-key="room.game.round" />
                   </div>
                 </div>
               </div>
@@ -209,7 +202,7 @@
           <UiBadge tone="muted">Hover cards</UiBadge>
         </div>
 
-        <div class="mt-6 overflow-hidden rounded-[28px] border border-white/10 bg-[rgba(8,12,22,0.42)] px-4 py-6 sm:px-6">
+        <div class="mt-6 overflow-hidden rounded-[28px] border border-white/10 bg-[rgba(8,12,22,0.42)] px-3 py-5 sm:px-5 sm:py-5">
           <PlayerHand :cards="selfCards" :empty-label="selfPlayer?.isAdjudicator ? 'Adjudicator' : 'Waiting for deal'" :flip-key="room.game.round" />
         </div>
         <p class="mt-5 text-sm text-slate-400">{{ statusLine }}</p>

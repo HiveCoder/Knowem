@@ -1,12 +1,13 @@
 <template>
   <div ref="tableRef" class="pointer-events-none absolute inset-0 z-20 overflow-hidden">
     <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-      <div class="relative h-32 w-24 sm:h-36 sm:w-28">
+      <div class="relative h-20 w-28 sm:h-24 sm:w-36">
         <div
           v-for="index in 6"
           :key="`stack-${index}`"
           :ref="registerStackRef"
-          class="absolute left-1/2 top-1/2 h-32 w-24 -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-zinc-800 bg-zinc-900 shadow-[0_10px_20px_rgba(0,0,0,0.2)] will-change-transform sm:h-36 sm:w-28"
+          class="absolute left-1/2 top-1/2 h-20 w-28 -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl shadow-[0_10px_20px_rgba(0,0,0,0.2)] will-change-transform sm:h-24 sm:w-36"
+          :style="deckArtStyle"
         />
       </div>
     </div>
@@ -23,18 +24,16 @@
       v-for="card in flightCards"
       :key="card.id"
       :ref="registerFlightRef"
-      class="absolute left-1/2 top-1/2 h-28 w-20 -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-zinc-800 bg-zinc-900 shadow-[0_10px_20px_rgba(0,0,0,0.18)] opacity-0 will-change-transform sm:h-32 sm:w-24"
-    >
-      <div class="flex h-full items-end rounded-[inherit] bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.05),_transparent_40%)] p-3">
-        <span class="rounded-full border border-zinc-700 bg-zinc-800 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.24em] text-zinc-300">Knowem</span>
-      </div>
-    </div>
+      class="absolute left-1/2 top-1/2 h-20 w-28 -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl shadow-[0_10px_20px_rgba(0,0,0,0.18)] opacity-0 will-change-transform sm:h-24 sm:w-36"
+      :style="deckArtStyle"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
 import gsap from 'gsap'
+import { deckBackImage } from '@/assets/card-art'
 
 interface SeatTarget {
   id: string
@@ -63,6 +62,13 @@ const flightCards = computed(() =>
     })),
   ),
 )
+
+const deckArtStyle = {
+  backgroundImage: `url(${deckBackImage})`,
+  backgroundPosition: 'center',
+  backgroundRepeat: 'no-repeat',
+  backgroundSize: 'cover',
+}
 
 function registerStackRef(element: Element | null) {
   if (element instanceof HTMLElement && !stackRefs.value.includes(element)) {

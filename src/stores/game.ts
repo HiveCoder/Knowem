@@ -6,8 +6,6 @@ import type {
   BotDifficulty,
   ChatMessage,
   ChatPayload,
-  ChatTypingEvent,
-  ChatTypingPayload,
   JoinRoomPayload,
   PrivateState,
   RoomState,
@@ -16,12 +14,6 @@ import type {
 } from '@/types/game'
 
 type ConnectionState = 'connecting' | 'connected' | 'reconnecting' | 'offline'
-
-interface TypingPresence {
-  playerId: string
-  username: string
-  toPlayerId?: string
-}
 
 export const useGameStore = defineStore('game', () => {
   let socket = null as ReturnType<typeof getSocket> | null
@@ -35,7 +27,6 @@ export const useGameStore = defineStore('game', () => {
   const reconnectNotice = ref('')
   const backendStatusMessage = ref('')
   const backendUrl = ref(getSocketUrl())
-  const typingPresence = ref<TypingPresence[]>([])
 
   socket = getSocket()
   const socketWarning = getSocketWarning()
@@ -102,28 +93,9 @@ export const useGameStore = defineStore('game', () => {
       if (!room.value) {
         return
       }
-      typingPresence.value = typingPresence.value.filter((entry) => entry.playerId !== message.fromPlayerId)
       room.value = {
         ...room.value,
         chat: [...room.value.chat, message],
-      }
-    })
-
-    socket.on('chat_typing', (event: ChatTypingEvent) => {
-      if (event.roomCode !== roomCode.value || event.fromPlayerId === playerId.value) {
-        return
-      }
-
-      typingPresence.value = typingPresence.value.filter((entry) => entry.playerId !== event.fromPlayerId)
-      if (event.isTyping) {
-        typingPresence.value = [
-          ...typingPresence.value,
-          {
-            playerId: event.fromPlayerId,
-            username: event.fromUsername,
-            toPlayerId: event.toPlayerId,
-          },
-        ]
       }
     })
   }
@@ -189,7 +161,6 @@ export const useGameStore = defineStore('game', () => {
     privateState.value = null
     roomCode.value = ''
     playerId.value = ''
-    typingPresence.value = []
   }
 
   function toggleReady() {
@@ -288,21 +259,6 @@ export const useGameStore = defineStore('game', () => {
     withSocket((instance) => {
       instance.emit('chat_message', payload)
     })
-    typingPresence.value = typingPresence.value.filter((entry) => entry.playerId !== playerId.value)
-  }
-
-  function sendChatTyping(isTyping: boolean, toPlayerId?: string) {
-    if (!roomCode.value) {
-      return
-    }
-    const payload: ChatTypingPayload = {
-      roomCode: roomCode.value,
-      isTyping,
-      toPlayerId,
-    }
-    withSocket((instance) => {
-      instance.emit('chat_typing', payload)
-    })
   }
 
   return {
@@ -318,7 +274,6 @@ export const useGameStore = defineStore('game', () => {
     connectionState,
     backendStatusMessage,
     backendUrl,
-    typingPresence,
     reconnectNotice,
     canStart,
     latestError,
@@ -335,7 +290,6 @@ export const useGameStore = defineStore('game', () => {
     submitVote,
     nextRound,
     sendChatMessage,
-    sendChatTyping,
     clearError,
     clearReconnectNotice,
   }

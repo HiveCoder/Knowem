@@ -1,8 +1,12 @@
 <template>
-  <div class="card-shell" :class="[sizeClass, selected ? 'card-shell-selected' : '']">
+  <div class="card-shell" :class="[sizeClass, selected ? 'card-shell-selected' : '', imageMode ? 'card-shell-image' : '']">
     <div ref="innerRef" class="card-inner will-change-transform">
       <div class="card-face card-back" :class="backToneClass">
-        <div class="card-backdrop flex h-full flex-col justify-between rounded-[inherit] border p-4 sm:p-5">
+        <div v-if="backImageSrc" class="card-media-surface">
+          <div class="card-art-fill" :style="backArtStyle" :aria-label="`${backLabel} back`" role="img" />
+        </div>
+
+        <div v-else class="card-backdrop flex h-full flex-col justify-between rounded-[inherit] border p-4 sm:p-5">
           <div class="flex items-start justify-between gap-3">
             <span class="card-chip w-fit">Knowem</span>
             <span class="card-dot" :class="toneDotClass" />
@@ -17,7 +21,11 @@
       </div>
 
       <div class="card-face card-front" :class="frontToneClass">
-        <div class="card-frontdrop flex h-full flex-col justify-between rounded-[inherit] border p-4 text-current sm:p-5">
+        <div v-if="frontImageSrc" class="card-media-surface">
+          <div class="card-art-fill" :style="frontArtStyle" :aria-label="title" role="img" />
+        </div>
+
+        <div v-else class="card-frontdrop flex h-full flex-col justify-between rounded-[inherit] border p-4 text-current sm:p-5">
           <div class="flex items-start justify-between gap-3">
             <div>
               <p class="text-[10px] uppercase tracking-[0.34em] text-zinc-500">{{ toneLabel }}</p>
@@ -46,6 +54,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import gsap from 'gsap'
+import { resolveCardBackImage, resolveCardFrontImage } from '@/assets/card-art'
 
 const props = withDefaults(
   defineProps<{
@@ -72,7 +81,31 @@ const props = withDefaults(
 
 const innerRef = ref<HTMLElement | null>(null)
 
-const sizeClass = computed(() => (props.size === 'sm' ? 'aspect-[3/4] w-[5.25rem] sm:w-[5.75rem]' : 'aspect-[3/4] w-[7.5rem] sm:w-[8.5rem]'))
+const sizeClass = computed(() => (props.size === 'sm' ? 'aspect-[826/574] w-[7.1rem] sm:w-[7.75rem]' : 'aspect-[826/574] w-[10rem] sm:w-[11rem]'))
+const frontImageSrc = computed(() => resolveCardFrontImage(props.title))
+const backImageSrc = computed(() =>
+  resolveCardBackImage({
+    tone: props.tone,
+    title: props.title,
+    backLabel: props.backLabel,
+    badgeLabel: props.badgeLabel,
+  }),
+)
+const imageMode = computed(() => Boolean(frontImageSrc.value || backImageSrc.value))
+const frontArtStyle = computed(() =>
+  frontImageSrc.value
+    ? {
+        backgroundImage: `url(${frontImageSrc.value})`,
+      }
+    : undefined,
+)
+const backArtStyle = computed(() =>
+  backImageSrc.value
+    ? {
+        backgroundImage: `url(${backImageSrc.value})`,
+      }
+    : undefined,
+)
 const frontToneClass = computed(() => {
   if (props.tone === 'truth') {
     return 'text-zinc-100'
@@ -158,8 +191,8 @@ async function animateFlip() {
   gsap.killTweensOf(innerRef.value)
   gsap.to(innerRef.value, {
     rotateY: props.revealed ? 180 : 0,
-    duration: 0.58,
-    ease: 'power2.out',
+    duration: 0.5,
+    ease: 'power2.inOut',
     force3D: true,
   })
 }
@@ -168,7 +201,11 @@ watch(() => [props.revealed, props.flipKey], animateFlip)
 
 onMounted(() => {
   if (innerRef.value) {
-    gsap.set(innerRef.value, { rotateY: props.revealed ? 180 : 0 })
+    gsap.set(innerRef.value, {
+      rotateY: props.revealed ? 180 : 0,
+      transformPerspective: 1200,
+      transformStyle: 'preserve-3d',
+    })
   }
 })
 </script>
@@ -176,18 +213,21 @@ onMounted(() => {
 <style scoped>
 .card-shell {
   perspective: 1200px;
-  transition: transform 220ms ease, filter 220ms ease;
-  position: relative;
-  z-index: 2;
+  transition: transform 180ms ease, filter 180ms ease;
+  transform-origin: center center;
 }
 
 .card-shell:hover {
-  transform: translateY(-2px) scale(1.02);
-  filter: brightness(1.015);
+  transform: translateY(-2px);
+  filter: brightness(1.01);
 }
 
 .card-shell-selected {
-  transform: translateY(-1px) scale(1.02);
+  transform: translateY(-2px);
+}
+
+.card-shell-image {
+  filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.26));
 }
 
 .card-inner {
@@ -195,17 +235,21 @@ onMounted(() => {
   height: 100%;
   width: 100%;
   transform-style: preserve-3d;
+  transform-origin: center center;
 }
 
 .card-face {
   position: absolute;
   inset: 0;
-  border-radius: 1rem;
+  border-radius: 1.1rem;
   backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform-style: preserve-3d;
+  overflow: hidden;
 }
 
 .card-front {
-  transform: rotateY(180deg);
+  transform: rotateY(180deg) translateZ(1px);
 }
 
 .card-chip {
@@ -243,11 +287,29 @@ onMounted(() => {
 
 .card-back,
 .card-front {
-  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.16);
 }
 
 .card-shell-selected .card-front,
 .card-shell-selected .card-back {
-  box-shadow: 0 0 0 1px rgba(82, 82, 91, 0.88), 0 12px 20px rgba(0, 0, 0, 0.22);
+  box-shadow: 0 0 0 1px rgba(82, 82, 91, 0.55), 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+.card-media-surface {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  background: transparent;
+}
+
+.card-art-fill {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  transform: translateZ(0);
 }
 </style>

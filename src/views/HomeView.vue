@@ -72,9 +72,13 @@
           <p class="text-xs uppercase tracking-[0.34em] text-slate-500">Question</p>
           <h2 class="mt-3 text-3xl font-semibold tracking-tight text-white">{{ featuredQuestion }}</h2>
         </div>
-        <div class="grid gap-4 sm:grid-cols-2">
-          <ActionCard title="Truth Card" subtitle="Answer honestly" tone="truth" :revealed="true" />
-          <ActionCard title="False Card" subtitle="Sell the lie" tone="false" :revealed="true" />
+        <div class="grid justify-center gap-3 sm:grid-cols-2 sm:gap-4">
+          <div class="mx-auto w-full max-w-[11rem] sm:max-w-[12rem]">
+            <ActionCard title="Truth Card" subtitle="Answer honestly" tone="truth" :revealed="true" />
+          </div>
+          <div class="mx-auto w-full max-w-[11rem] sm:max-w-[12rem]">
+            <ActionCard title="False Card" subtitle="Sell the lie" tone="false" :revealed="true" />
+          </div>
         </div>
       </div>
     </UiPanel>
