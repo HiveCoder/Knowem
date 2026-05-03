@@ -1,6 +1,6 @@
 <template>
   <div v-if="room" class="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-[1460px] items-start py-2 sm:py-4">
-    <div class="w-full space-y-6">
+    <div class="w-full space-y-6 pb-36 sm:pb-24">
       <div class="grid gap-6 xl:grid-cols-[minmax(0,1.22fr)_380px]">
         <UiPanel tag="header" padding="lg" class="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div class="min-w-0">
@@ -62,17 +62,17 @@
           @next-round="game.nextRound"
         />
 
-        <div class="grid gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(340px,1.1fr)] xl:items-start">
-          <ScoreBoard :players="room.players" />
-          <ChatPanel
-            :messages="room.chat"
-            :players="room.players"
-            :self-id="game.playerId"
-            :allow-bot-direct-messages="room.botSettings.allowBotDirectMessages"
-            @send="game.sendChatMessage"
-          />
-        </div>
+        <ScoreBoard :players="room.players" />
       </div>
+
+      <ChatPanel
+        :room-code="room.code"
+        :messages="room.chat"
+        :players="room.players"
+        :self-id="game.playerId"
+        :allow-bot-direct-messages="room.botSettings.allowBotDirectMessages"
+        @send="game.sendChatMessage"
+      />
     </div>
   </div>
 

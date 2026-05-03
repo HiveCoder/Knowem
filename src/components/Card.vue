@@ -1,5 +1,13 @@
 <template>
-  <div class="card-shell" :class="[sizeClass, selected ? 'card-shell-selected' : '', imageMode ? 'card-shell-image' : '']">
+  <div
+    ref="shellRef"
+    class="card-shell"
+    :class="[sizeClass, selected ? 'card-shell-selected' : '', imageMode ? 'card-shell-image' : '']"
+    :style="shellStyle"
+    @pointermove="handlePointerMove"
+    @pointerleave="resetPointerTilt"
+  >
+    <div class="card-specular" aria-hidden="true" />
     <div ref="innerRef" class="card-inner will-change-transform">
       <div class="card-face card-back" :class="backToneClass">
         <div v-if="backImageSrc" class="card-media-surface">
@@ -80,6 +88,10 @@ const props = withDefaults(
 )
 
 const innerRef = ref<HTMLElement | null>(null)
+const shellRef = ref<HTMLElement | null>(null)
+const tiltX = ref(0)
+const tiltY = ref(0)
+const glowOpacity = ref(0)
 
 const sizeClass = computed(() => (props.size === 'sm' ? 'aspect-[826/574] w-[7.1rem] sm:w-[7.75rem]' : 'aspect-[826/574] w-[10rem] sm:w-[11rem]'))
 const frontImageSrc = computed(() => resolveCardFrontImage(props.title))
@@ -181,6 +193,11 @@ const toneDotClass = computed(() => {
   }
   return 'bg-slate-600'
 })
+const shellStyle = computed(() => ({
+  '--card-tilt-x': `${tiltX.value}deg`,
+  '--card-tilt-y': `${tiltY.value}deg`,
+  '--card-glow-opacity': `${glowOpacity.value}`,
+}))
 
 async function animateFlip() {
   await nextTick()
@@ -189,12 +206,53 @@ async function animateFlip() {
   }
 
   gsap.killTweensOf(innerRef.value)
-  gsap.to(innerRef.value, {
-    rotateY: props.revealed ? 180 : 0,
-    duration: 0.5,
-    ease: 'power2.inOut',
-    force3D: true,
-  })
+  gsap.timeline()
+    .to(innerRef.value, {
+      scale: 0.985,
+      duration: 0.12,
+      ease: 'power2.out',
+      force3D: true,
+    })
+    .to(
+      innerRef.value,
+      {
+        rotateY: props.revealed ? 180 : 0,
+        duration: 0.62,
+        ease: 'power3.inOut',
+        force3D: true,
+      },
+      0,
+    )
+    .to(
+      innerRef.value,
+      {
+        scale: 1,
+        duration: 0.28,
+        ease: 'power2.out',
+        force3D: true,
+      },
+      0.28,
+    )
+}
+
+function handlePointerMove(event: PointerEvent) {
+  if (!shellRef.value || event.pointerType === 'touch') {
+    return
+  }
+
+  const bounds = shellRef.value.getBoundingClientRect()
+  const horizontal = (event.clientX - bounds.left) / bounds.width - 0.5
+  const vertical = (event.clientY - bounds.top) / bounds.height - 0.5
+
+  tiltY.value = Number((horizontal * 8).toFixed(2))
+  tiltX.value = Number((vertical * -7).toFixed(2))
+  glowOpacity.value = 0.55
+}
+
+function resetPointerTilt() {
+  tiltX.value = 0
+  tiltY.value = 0
+  glowOpacity.value = 0
 }
 
 watch(() => [props.revealed, props.flipKey], animateFlip)
@@ -212,22 +270,41 @@ onMounted(() => {
 
 <style scoped>
 .card-shell {
+  --card-tilt-x: 0deg;
+  --card-tilt-y: 0deg;
+  --card-glow-opacity: 0;
+  position: relative;
   perspective: 1200px;
-  transition: transform 180ms ease, filter 180ms ease;
+  transition: transform 220ms ease, filter 220ms ease;
   transform-origin: center center;
+  transform: translateY(0) rotateX(var(--card-tilt-x)) rotateY(var(--card-tilt-y));
 }
 
 .card-shell:hover {
-  transform: translateY(-2px);
-  filter: brightness(1.01);
+  transform: translateY(-4px) rotateX(var(--card-tilt-x)) rotateY(var(--card-tilt-y));
+  filter: brightness(1.02);
 }
 
 .card-shell-selected {
-  transform: translateY(-2px);
+  transform: translateY(-4px) rotateX(var(--card-tilt-x)) rotateY(var(--card-tilt-y));
 }
 
 .card-shell-image {
-  filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.26));
+  filter: drop-shadow(0 16px 28px rgba(0, 0, 0, 0.34));
+}
+
+.card-specular {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: 1.1rem;
+  pointer-events: none;
+  opacity: var(--card-glow-opacity);
+  background:
+    radial-gradient(circle at 18% 14%, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0) 28%),
+    linear-gradient(120deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0) 32%, rgba(255, 255, 255, 0.08) 55%, rgba(255, 255, 255, 0) 72%);
+  mix-blend-mode: screen;
+  transition: opacity 180ms ease;
 }
 
 .card-inner {
@@ -282,17 +359,17 @@ onMounted(() => {
   background:
     radial-gradient(circle at top, rgba(255, 255, 255, 0.05), transparent 32%),
     linear-gradient(180deg, rgba(24, 24, 27, 0.98), rgba(15, 15, 18, 0.98));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .card-back,
 .card-front {
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.16);
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.24);
 }
 
 .card-shell-selected .card-front,
 .card-shell-selected .card-back {
-  box-shadow: 0 0 0 1px rgba(82, 82, 91, 0.55), 0 10px 20px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.26), 0 22px 42px rgba(2, 6, 23, 0.3);
 }
 
 .card-media-surface {
@@ -311,5 +388,12 @@ onMounted(() => {
   background-repeat: no-repeat;
   background-size: cover;
   transform: translateZ(0);
+  transition: transform 220ms ease, filter 220ms ease;
+}
+
+.card-shell:hover .card-art-fill,
+.card-shell-selected .card-art-fill {
+  transform: scale(1.025) translateZ(0);
+  filter: saturate(1.04);
 }
 </style>
