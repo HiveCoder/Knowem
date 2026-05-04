@@ -101,20 +101,22 @@
                   <div class="flex items-center gap-2 self-end sm:self-auto">
                     <button
                       type="button"
-                      class="inline-flex h-[52px] min-w-[52px] items-center justify-center rounded-full border text-slate-100 transition"
-                      :class="supportsVoiceInput
-                        ? isMicListening
-                          ? 'border-emerald-300/35 bg-emerald-400/15 text-emerald-100 hover:bg-emerald-400/22'
-                          : 'border-white/10 bg-white/[0.04] hover:border-white/20 hover:bg-white/[0.08]'
-                        : 'cursor-not-allowed border-white/10 bg-white/[0.03] text-slate-500 opacity-60'"
+                      class="mic-toggle-button inline-flex h-[52px] min-w-[8.9rem] items-center justify-center gap-2 rounded-full border px-4 text-sm font-semibold uppercase tracking-[0.18em] text-slate-100 transition"
+                      :class="micButtonClass"
                       :disabled="!supportsVoiceInput"
                       @click="toggleMic"
                     >
                       <span class="sr-only">{{ isMicListening ? 'Turn microphone off' : 'Turn microphone on' }}</span>
-                      <svg viewBox="0 0 20 20" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
-                        <path d="M10 13a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v4a3 3 0 0 0 3 3Z" stroke-linecap="round" stroke-linejoin="round" />
-                        <path d="M5.5 10.5a4.5 4.5 0 0 0 9 0M10 15v2.5M7.5 17.5h5" stroke-linecap="round" />
-                      </svg>
+                      <span class="relative inline-flex h-6 w-6 items-center justify-center">
+                        <span v-if="isMicListening" class="mic-ping-ring" aria-hidden="true" />
+                        <span class="mic-state-dot" :class="isMicListening ? 'mic-state-dot-on' : 'mic-state-dot-off'" aria-hidden="true" />
+                        <svg viewBox="0 0 20 20" class="relative z-[1] h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+                          <path d="M10 13a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v4a3 3 0 0 0 3 3Z" stroke-linecap="round" stroke-linejoin="round" />
+                          <path d="M5.5 10.5a4.5 4.5 0 0 0 9 0M10 15v2.5M7.5 17.5h5" stroke-linecap="round" />
+                          <path v-if="!isMicListening" d="M4.25 4.25 15.75 15.75" stroke-linecap="round" />
+                        </svg>
+                      </span>
+                      <span>{{ micButtonLabel }}</span>
                     </button>
                     <UiButton variant="primary" type="submit" :disabled="!draft.trim()" class="min-w-[7rem] sm:min-w-[6.5rem]">
                       <span class="inline-flex items-center gap-2">
@@ -125,10 +127,6 @@
                       </span>
                     </UiButton>
                   </div>
-                </div>
-                <div class="flex flex-wrap items-center justify-between gap-2 px-1 text-[11px] uppercase tracking-[0.18em] text-slate-500">
-                  <span>{{ micStatusText }}</span>
-                  <span v-if="micInterimTranscript" class="max-w-full truncate text-cyan-100/80">{{ micInterimTranscript }}</span>
                 </div>
               </form>
             </div>
@@ -214,12 +212,21 @@ const headerSummary = computed(() => {
 
   return latest.isOwn ? latest.message : `${latest.fromUsername}: ${latest.message}`
 })
-const micStatusText = computed(() => {
+const micButtonLabel = computed(() => {
   if (!supportsVoiceInput.value) {
-    return 'Mic unavailable on this device'
+    return 'Mic unavailable'
   }
 
-  return micStatus.value
+  return isMicListening.value ? 'Mic on' : 'Mic off'
+})
+const micButtonClass = computed(() => {
+  if (!supportsVoiceInput.value) {
+    return 'cursor-not-allowed border-white/10 bg-white/[0.03] text-slate-500 opacity-60'
+  }
+
+  return isMicListening.value
+    ? 'border-emerald-300/40 bg-emerald-400/15 text-emerald-50 shadow-[0_0_0_1px_rgba(110,231,183,0.2),0_0_28px_rgba(52,211,153,0.24)] hover:bg-emerald-400/22'
+    : 'border-white/10 bg-white/[0.04] text-slate-100 hover:border-white/20 hover:bg-white/[0.08]'
 })
 
 function getDefaultOpenState() {
@@ -443,5 +450,50 @@ function formatTime(timestamp: number) {
 .chat-launcher-leave-to {
   opacity: 0;
   transform: translateY(10px) scale(0.98);
+}
+
+.mic-toggle-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.mic-ping-ring {
+  position: absolute;
+  inset: 0.1rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(110, 231, 183, 0.55);
+  animation: micPulse 1.2s ease-out infinite;
+}
+
+.mic-state-dot {
+  position: absolute;
+  top: 0.1rem;
+  right: 0.05rem;
+  height: 0.45rem;
+  width: 0.45rem;
+  border-radius: 9999px;
+  z-index: 2;
+}
+
+.mic-state-dot-on {
+  background: rgb(110 231 183);
+  box-shadow: 0 0 12px rgba(110, 231, 183, 0.72);
+}
+
+.mic-state-dot-off {
+  background: rgb(148 163 184);
+  box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.18);
+}
+
+@keyframes micPulse {
+  0% {
+    opacity: 0.85;
+    transform: scale(0.92);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.45);
+  }
 }
 </style>

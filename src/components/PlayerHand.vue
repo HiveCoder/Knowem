@@ -98,23 +98,23 @@ watch(
 
 const containerClass = computed(() => {
   if (props.compact) {
-    return 'min-h-28 w-full max-w-[380px]'
+    return 'min-h-32 w-full max-w-[470px]'
   }
 
   if (props.spreadApart && props.centerRevealActive) {
-    return 'min-h-44 w-full max-w-[1080px]'
+    return 'min-h-48 w-full max-w-[1260px]'
   }
 
-  return props.spreadApart ? 'min-h-44 w-full max-w-[860px]' : 'min-h-40 w-full max-w-[680px]'
+  return props.spreadApart ? 'min-h-48 w-full max-w-[1020px]' : 'min-h-44 w-full max-w-[820px]'
 })
 const handClass = computed(() =>
   props.compact
-    ? 'flex-wrap justify-center gap-2.5 sm:gap-3'
+    ? 'flex-wrap justify-center gap-3 sm:gap-4'
     : props.spreadApart && props.centerRevealActive
-      ? 'justify-between gap-0 px-5 sm:px-12 lg:px-20'
+      ? 'justify-between gap-0 px-6 sm:px-14 lg:px-24'
       : props.spreadApart
-      ? 'justify-between gap-3 px-3 sm:px-6'
-      : 'flex-wrap justify-center gap-3.5 sm:gap-4',
+      ? 'justify-between gap-4 px-4 sm:px-8'
+      : 'flex-wrap justify-center gap-4 sm:gap-5',
 )
 
 function isPendingCard(card: HandCardItem) {

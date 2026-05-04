@@ -133,8 +133,8 @@ const showWildBadge = computed(() => props.isWild || props.tone === 'wild')
 
 const sizeClass = computed(() =>
   props.size === 'sm'
-    ? 'aspect-[826/574] w-[7.75rem] sm:w-[8.6rem] lg:w-[9.4rem]'
-    : 'aspect-[826/574] w-[9.8rem] sm:w-[11.2rem] lg:w-[12.9rem]',
+    ? 'aspect-[826/574] w-[9.4rem] sm:w-[10.8rem] lg:w-[12rem]'
+    : 'aspect-[826/574] w-[12.4rem] sm:w-[14.3rem] lg:w-[16.4rem]',
 )
 const frontImageSrc = computed(() => resolveCardFrontImage(props.title))
 const backImageSrc = computed(() =>
