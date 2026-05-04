@@ -87,7 +87,7 @@
                   <option value="">Everyone</option>
                   <option v-for="player in dmOptions" :key="player.id" :value="player.id">Direct: {{ player.username }}</option>
                 </select>
-                <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
+                <div class="flex flex-col gap-3">
                   <textarea
                     ref="textareaRef"
                     v-model="draft"
@@ -98,7 +98,7 @@
                     @keydown.enter.exact.prevent="handleSubmit"
                     @keydown.shift.enter.stop
                   />
-                  <div class="flex items-center gap-2 self-end sm:self-auto">
+                  <div class="flex items-center justify-end gap-2">
                     <button
                       type="button"
                       class="mic-toggle-button inline-flex h-[52px] min-w-[8.9rem] items-center justify-center gap-2 rounded-full border px-4 text-sm font-semibold uppercase tracking-[0.18em] text-slate-100 transition"
@@ -118,7 +118,7 @@
                       </span>
                       <span>{{ micButtonLabel }}</span>
                     </button>
-                    <UiButton variant="primary" type="submit" :disabled="!draft.trim()" class="min-w-[7rem] sm:min-w-[6.5rem]">
+                    <UiButton variant="primary" type="submit" :disabled="!draft.trim()" class="min-w-[7rem]">
                       <span class="inline-flex items-center gap-2">
                         <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4" aria-hidden="true">
                           <path d="M3.5 10h9m0 0-3.5-3.5M12.5 10l-3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
