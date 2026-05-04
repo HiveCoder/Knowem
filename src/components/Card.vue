@@ -28,7 +28,6 @@
       <span class="card-corner card-corner-bl" />
       <span class="card-corner card-corner-br" />
     </div>
-    <div v-if="showWildBadge" class="card-wild-badge">WILD CARD</div>
     <div ref="innerRef" class="card-inner will-change-transform">
       <div class="card-face card-back" :class="backToneClass">
         <div v-if="backImageSrc" class="card-media-surface">
@@ -132,7 +131,11 @@ const glowOpacity = ref(0)
 const resolvedFlipped = computed(() => props.isFlipped ?? props.revealed)
 const showWildBadge = computed(() => props.isWild || props.tone === 'wild')
 
-const sizeClass = computed(() => (props.size === 'sm' ? 'aspect-[826/574] w-[8rem] sm:w-[8.75rem]' : 'aspect-[826/574] w-[11.5rem] sm:w-[12.75rem]'))
+const sizeClass = computed(() =>
+  props.size === 'sm'
+    ? 'aspect-[826/574] w-[7.75rem] sm:w-[8.6rem] lg:w-[9.4rem]'
+    : 'aspect-[826/574] w-[9.8rem] sm:w-[11.2rem] lg:w-[12.9rem]',
+)
 const frontImageSrc = computed(() => resolveCardFrontImage(props.title))
 const backImageSrc = computed(() =>
   resolveCardBackImage({
@@ -541,22 +544,6 @@ onMounted(() => {
   border-bottom-right-radius: 0.5rem;
 }
 
-.card-wild-badge {
-  position: absolute;
-  right: 0.75rem;
-  top: 0.75rem;
-  z-index: 4;
-  border-radius: 9999px;
-  border: 1px solid rgba(251, 191, 36, 0.4);
-  background: rgba(120, 53, 15, 0.68);
-  color: rgb(254 243 199);
-  padding: 0.24rem 0.58rem;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
-  box-shadow: 0 0 18px rgba(251, 191, 36, 0.18);
-}
 
 .card-inner {
   position: relative;

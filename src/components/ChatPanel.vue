@@ -87,7 +87,7 @@
                   <option value="">Everyone</option>
                   <option v-for="player in dmOptions" :key="player.id" :value="player.id">Direct: {{ player.username }}</option>
                 </select>
-                <div class="flex items-end gap-3">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
                   <textarea
                     ref="textareaRef"
                     v-model="draft"
@@ -98,14 +98,37 @@
                     @keydown.enter.exact.prevent="handleSubmit"
                     @keydown.shift.enter.stop
                   />
-                  <UiButton variant="primary" type="submit" :disabled="!draft.trim()">
-                    <span class="inline-flex items-center gap-2">
-                      <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4" aria-hidden="true">
-                        <path d="M3.5 10h9m0 0-3.5-3.5M12.5 10l-3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                  <div class="flex items-center gap-2 self-end sm:self-auto">
+                    <button
+                      type="button"
+                      class="inline-flex h-[52px] min-w-[52px] items-center justify-center rounded-full border text-slate-100 transition"
+                      :class="supportsVoiceInput
+                        ? isMicListening
+                          ? 'border-emerald-300/35 bg-emerald-400/15 text-emerald-100 hover:bg-emerald-400/22'
+                          : 'border-white/10 bg-white/[0.04] hover:border-white/20 hover:bg-white/[0.08]'
+                        : 'cursor-not-allowed border-white/10 bg-white/[0.03] text-slate-500 opacity-60'"
+                      :disabled="!supportsVoiceInput"
+                      @click="toggleMic"
+                    >
+                      <span class="sr-only">{{ isMicListening ? 'Turn microphone off' : 'Turn microphone on' }}</span>
+                      <svg viewBox="0 0 20 20" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+                        <path d="M10 13a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v4a3 3 0 0 0 3 3Z" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M5.5 10.5a4.5 4.5 0 0 0 9 0M10 15v2.5M7.5 17.5h5" stroke-linecap="round" />
                       </svg>
-                      Send
-                    </span>
-                  </UiButton>
+                    </button>
+                    <UiButton variant="primary" type="submit" :disabled="!draft.trim()" class="min-w-[7rem] sm:min-w-[6.5rem]">
+                      <span class="inline-flex items-center gap-2">
+                        <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4" aria-hidden="true">
+                          <path d="M3.5 10h9m0 0-3.5-3.5M12.5 10l-3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        Send
+                      </span>
+                    </UiButton>
+                  </div>
+                </div>
+                <div class="flex flex-wrap items-center justify-between gap-2 px-1 text-[11px] uppercase tracking-[0.18em] text-slate-500">
+                  <span>{{ micStatusText }}</span>
+                  <span v-if="micInterimTranscript" class="max-w-full truncate text-cyan-100/80">{{ micInterimTranscript }}</span>
                 </div>
               </form>
             </div>
@@ -117,10 +140,35 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import UiBadge from '@/components/ui/UiBadge.vue'
 import UiButton from '@/components/ui/UiButton.vue'
 import type { ChatMessage, PublicPlayer } from '@/types/game'
+
+type SpeechRecognitionResultLike = {
+  isFinal: boolean
+  0: {
+    transcript: string
+  }
+}
+
+type SpeechRecognitionEventLike = {
+  resultIndex: number
+  results: ArrayLike<SpeechRecognitionResultLike>
+}
+
+type BrowserSpeechRecognition = {
+  continuous: boolean
+  interimResults: boolean
+  lang: string
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null
+  onerror: ((event: { error: string }) => void) | null
+  onend: (() => void) | null
+  start: () => void
+  stop: () => void
+}
+
+type BrowserSpeechRecognitionConstructor = new () => BrowserSpeechRecognition
 
 const props = defineProps<{
   roomCode: string
@@ -140,6 +188,11 @@ const isOpen = ref(true)
 const unreadCount = ref(0)
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
 const messageListRef = ref<HTMLElement | null>(null)
+const supportsVoiceInput = ref(false)
+const isMicListening = ref(false)
+const micStatus = ref('Mic off')
+const micInterimTranscript = ref('')
+const speechRecognition = ref<BrowserSpeechRecognition | null>(null)
 
 const storageKey = computed(() => `knowem-chat-open:${props.roomCode}`)
 
@@ -160,6 +213,13 @@ const headerSummary = computed(() => {
   }
 
   return latest.isOwn ? latest.message : `${latest.fromUsername}: ${latest.message}`
+})
+const micStatusText = computed(() => {
+  if (!supportsVoiceInput.value) {
+    return 'Mic unavailable on this device'
+  }
+
+  return micStatus.value
 })
 
 function getDefaultOpenState() {
@@ -213,8 +273,13 @@ watch(targetPlayerId, () => nextTick(() => textareaRef.value?.focus()))
 
 onMounted(() => {
   isOpen.value = getStoredOpenState(storageKey.value)
+  initializeSpeechRecognition()
   syncTextareaHeight()
   scrollToBottom('auto')
+})
+
+onBeforeUnmount(() => {
+  stopVoiceInput()
 })
 
 function handleSubmit() {
@@ -228,6 +293,99 @@ function handleSubmit() {
     syncTextareaHeight()
     scrollToBottom('smooth')
   })
+}
+
+function initializeSpeechRecognition() {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  const Recognition = ((window as typeof window & { SpeechRecognition?: BrowserSpeechRecognitionConstructor; webkitSpeechRecognition?: BrowserSpeechRecognitionConstructor }).SpeechRecognition
+    || (window as typeof window & { webkitSpeechRecognition?: BrowserSpeechRecognitionConstructor }).webkitSpeechRecognition)
+
+  if (!Recognition) {
+    return
+  }
+
+  const recognition = new Recognition()
+  recognition.continuous = true
+  recognition.interimResults = true
+  recognition.lang = 'en-US'
+  recognition.onresult = handleRecognitionResult
+  recognition.onerror = ({ error }) => {
+    micStatus.value = error === 'not-allowed' ? 'Mic permission blocked' : 'Mic error'
+    isMicListening.value = false
+    micInterimTranscript.value = ''
+  }
+  recognition.onend = () => {
+    if (isMicListening.value) {
+      isMicListening.value = false
+      micStatus.value = 'Mic off'
+      micInterimTranscript.value = ''
+    }
+  }
+
+  speechRecognition.value = recognition
+  supportsVoiceInput.value = true
+}
+
+function handleRecognitionResult(event: SpeechRecognitionEventLike) {
+  let finalTranscript = ''
+  let interimTranscript = ''
+
+  for (let index = event.resultIndex; index < event.results.length; index += 1) {
+    const result = event.results[index]
+    const transcript = result[0]?.transcript?.trim() || ''
+
+    if (!transcript) {
+      continue
+    }
+
+    if (result.isFinal) {
+      finalTranscript += `${transcript} `
+    } else {
+      interimTranscript += `${transcript} `
+    }
+  }
+
+  if (finalTranscript.trim()) {
+    draft.value = [draft.value.trim(), finalTranscript.trim()].filter(Boolean).join(draft.value.trim() ? ' ' : '')
+    nextTick(() => syncTextareaHeight())
+  }
+
+  micInterimTranscript.value = interimTranscript.trim() ? `Listening: ${interimTranscript.trim()}` : ''
+}
+
+function toggleMic() {
+  if (!supportsVoiceInput.value || !speechRecognition.value) {
+    return
+  }
+
+  if (isMicListening.value) {
+    stopVoiceInput()
+    return
+  }
+
+  try {
+    speechRecognition.value.start()
+    isMicListening.value = true
+    micStatus.value = 'Mic on'
+    micInterimTranscript.value = ''
+  } catch {
+    micStatus.value = 'Mic unavailable'
+    isMicListening.value = false
+  }
+}
+
+function stopVoiceInput() {
+  if (!speechRecognition.value) {
+    return
+  }
+
+  speechRecognition.value.stop()
+  isMicListening.value = false
+  micStatus.value = supportsVoiceInput.value ? 'Mic off' : 'Mic unavailable on this device'
+  micInterimTranscript.value = ''
 }
 
 function openPanel() {
