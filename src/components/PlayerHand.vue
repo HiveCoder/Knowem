@@ -101,12 +101,18 @@ const containerClass = computed(() => {
     return 'min-h-24 w-full max-w-[320px]'
   }
 
+  if (props.spreadApart && props.centerRevealActive) {
+    return 'min-h-40 w-full max-w-[980px]'
+  }
+
   return props.spreadApart ? 'min-h-40 w-full max-w-[760px]' : 'min-h-36 w-full max-w-[560px]'
 })
 const handClass = computed(() =>
   props.compact
     ? 'flex-wrap justify-center gap-2 sm:gap-2.5'
-    : props.spreadApart
+    : props.spreadApart && props.centerRevealActive
+      ? 'justify-between gap-0 px-4 sm:px-10 lg:px-16'
+      : props.spreadApart
       ? 'justify-between gap-3 px-2 sm:px-4'
       : 'flex-wrap justify-center gap-3 sm:gap-3.5',
 )
@@ -121,17 +127,18 @@ function isCardSelected(card: HandCardItem, index: number) {
 
 function cardStyle(card: HandCardItem, index: number, hovered: boolean) {
   const centerOffset = index - (props.cards.length - 1) / 2
-  const revealOffsetBoost = props.spreadApart && props.centerRevealActive ? 150 : 34
-  const baseLift = props.compact ? 0 : props.spreadApart ? Math.abs(centerOffset) * (props.centerRevealActive ? 4.5 : 1.2) : Math.abs(centerOffset) * 2.2
-  const baseRotate = props.compact ? 0 : props.spreadApart ? centerOffset * (props.centerRevealActive ? 12 : 5.5) : centerOffset * 2.8
+  const handParkedAside = props.spreadApart && props.centerRevealActive
+  const revealOffsetBoost = props.spreadApart ? (handParkedAside ? 0 : 34) : 0
+  const baseLift = props.compact ? 0 : props.spreadApart ? Math.abs(centerOffset) * (handParkedAside ? 2.4 : 1.2) : Math.abs(centerOffset) * 2.2
+  const baseRotate = props.compact ? 0 : props.spreadApart ? centerOffset * (handParkedAside ? 6 : 5.5) : centerOffset * 2.8
   const selected = isCardSelected(card, index)
   const pending = isPendingCard(card)
-  const revealLift = props.spreadApart && props.centerRevealActive ? 18 : 0
+  const revealLift = handParkedAside ? 12 : 0
   const spreadX = props.spreadApart ? centerOffset * revealOffsetBoost : 0
-  const lift = pending ? -18 : selected ? baseLift - (props.spreadApart ? 8 : 11) : baseLift * -1 + revealLift
+  const lift = pending ? (handParkedAside ? 10 : -18) : selected ? baseLift - (props.spreadApart ? 8 : 11) : baseLift * -1 + revealLift
   const rotate = pending ? baseRotate * 0.12 : selected ? baseRotate * 0.24 : baseRotate
-  const scale = pending ? 1.02 : selected ? (props.centerRevealActive ? 0.86 : 0.98) : props.spreadApart ? (props.centerRevealActive ? 0.8 : 0.92) : 1
-  const opacity = props.spreadApart && props.centerRevealActive && !pending ? 0.72 : 1
+  const scale = pending ? (handParkedAside ? 0.7 : 1.02) : selected ? (props.centerRevealActive ? 0.82 : 0.98) : props.spreadApart ? (props.centerRevealActive ? 0.78 : 0.92) : 1
+  const opacity = pending && handParkedAside ? 0 : handParkedAside && !pending ? 0.68 : 1
 
   return {
     transform: `translateX(${spreadX}px) translateY(${lift}px) rotate(${rotate}deg) scale(${scale})`,
