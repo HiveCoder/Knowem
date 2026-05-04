@@ -66,6 +66,7 @@ const props = withDefaults(
     selectedCardType?: PlayedCardType | null
     pendingCardType?: PlayedCardType | null
     interactionLocked?: boolean
+    spreadApart?: boolean
   }>(),
   {
     compact: false,
@@ -74,6 +75,7 @@ const props = withDefaults(
     selectedCardType: null,
     pendingCardType: null,
     interactionLocked: false,
+    spreadApart: false,
   },
 )
 
@@ -92,9 +94,19 @@ watch(
   { immediate: true },
 )
 
-const containerClass = computed(() => (props.compact ? 'min-h-24 w-full max-w-[320px]' : 'min-h-36 w-full max-w-[560px]'))
+const containerClass = computed(() => {
+  if (props.compact) {
+    return 'min-h-24 w-full max-w-[320px]'
+  }
+
+  return props.spreadApart ? 'min-h-40 w-full max-w-[760px]' : 'min-h-36 w-full max-w-[560px]'
+})
 const handClass = computed(() =>
-  props.compact ? 'flex-wrap justify-center gap-2 sm:gap-2.5' : 'flex-wrap justify-center gap-3 sm:gap-3.5',
+  props.compact
+    ? 'flex-wrap justify-center gap-2 sm:gap-2.5'
+    : props.spreadApart
+      ? 'justify-between gap-3 px-2 sm:px-4'
+      : 'flex-wrap justify-center gap-3 sm:gap-3.5',
 )
 
 function isPendingCard(card: HandCardItem) {
@@ -107,16 +119,17 @@ function isCardSelected(card: HandCardItem, index: number) {
 
 function cardStyle(card: HandCardItem, index: number, hovered: boolean) {
   const centerOffset = index - (props.cards.length - 1) / 2
-  const baseLift = props.compact ? 0 : Math.abs(centerOffset) * 2.2
-  const baseRotate = props.compact ? 0 : centerOffset * 2.8
+  const baseLift = props.compact ? 0 : props.spreadApart ? Math.abs(centerOffset) * 1.2 : Math.abs(centerOffset) * 2.2
+  const baseRotate = props.compact ? 0 : props.spreadApart ? centerOffset * 5.5 : centerOffset * 2.8
   const selected = isCardSelected(card, index)
   const pending = isPendingCard(card)
-  const lift = pending ? -18 : selected ? baseLift - 11 : baseLift * -1
-  const rotate = pending ? baseRotate * 0.18 : selected ? baseRotate * 0.32 : baseRotate
-  const scale = pending ? 1.055 : selected ? 1.04 : 1
+  const spreadX = props.spreadApart ? centerOffset * 34 : 0
+  const lift = pending ? -18 : selected ? baseLift - (props.spreadApart ? 8 : 11) : baseLift * -1
+  const rotate = pending ? baseRotate * 0.12 : selected ? baseRotate * 0.24 : baseRotate
+  const scale = pending ? 1.02 : selected ? 0.98 : props.spreadApart ? 0.92 : 1
 
   return {
-    transform: `translateY(${lift}px) rotate(${rotate}deg) scale(${scale})`,
+    transform: `translateX(${spreadX}px) translateY(${lift}px) rotate(${rotate}deg) scale(${scale})`,
     zIndex: pending ? props.cards.length + 3 : selected ? props.cards.length + 2 : index + 1,
   }
 }

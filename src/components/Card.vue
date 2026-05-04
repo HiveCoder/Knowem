@@ -22,6 +22,12 @@
     @keydown.space.prevent="handleActivate"
   >
     <div class="card-specular" aria-hidden="true" />
+    <div v-if="selected || pending || isPlayed" class="card-corner-accents" aria-hidden="true">
+      <span class="card-corner card-corner-tl" />
+      <span class="card-corner card-corner-tr" />
+      <span class="card-corner card-corner-bl" />
+      <span class="card-corner card-corner-br" />
+    </div>
     <div v-if="showWildBadge" class="card-wild-badge">WILD CARD</div>
     <div ref="innerRef" class="card-inner will-change-transform">
       <div class="card-face card-back" :class="backToneClass">
@@ -486,6 +492,53 @@ onMounted(() => {
     linear-gradient(120deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0) 32%, rgba(255, 255, 255, 0.08) 55%, rgba(255, 255, 255, 0) 72%);
   mix-blend-mode: screen;
   transition: opacity 180ms ease;
+}
+
+.card-corner-accents {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.card-corner {
+  position: absolute;
+  width: 1.05rem;
+  height: 1.05rem;
+  border-color: rgba(125, 211, 252, 0.82);
+  filter: drop-shadow(0 0 6px rgba(125, 211, 252, 0.32));
+}
+
+.card-corner-tl {
+  top: 0.5rem;
+  left: 0.5rem;
+  border-top: 2px solid;
+  border-left: 2px solid;
+  border-top-left-radius: 0.5rem;
+}
+
+.card-corner-tr {
+  top: 0.5rem;
+  right: 0.5rem;
+  border-top: 2px solid;
+  border-right: 2px solid;
+  border-top-right-radius: 0.5rem;
+}
+
+.card-corner-bl {
+  bottom: 0.5rem;
+  left: 0.5rem;
+  border-bottom: 2px solid;
+  border-left: 2px solid;
+  border-bottom-left-radius: 0.5rem;
+}
+
+.card-corner-br {
+  right: 0.5rem;
+  bottom: 0.5rem;
+  border-right: 2px solid;
+  border-bottom: 2px solid;
+  border-bottom-right-radius: 0.5rem;
 }
 
 .card-wild-badge {

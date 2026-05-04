@@ -270,15 +270,24 @@
         </div>
 
         <div class="mt-6 overflow-hidden rounded-[28px] border border-white/10 bg-[rgba(8,12,22,0.42)] px-3 py-5 sm:px-5 sm:py-5">
-          <PlayerHand
-            :cards="selfCards"
-            :empty-label="selfPlayer?.isAdjudicator ? 'Adjudicator' : 'Waiting for deal'"
-            :flip-key="room.game.round"
-            :selected-card-type="selectedCardType"
-            :pending-card-type="pendingPlayCardType"
-            :interaction-locked="playIntentLocked"
-            @card-click="handleSelfCardClick"
-          />
+          <div class="relative overflow-hidden rounded-[24px] border border-white/10 bg-[radial-gradient(circle_at_center,rgba(8,145,178,0.12),rgba(8,12,22,0)_38%)] px-2 py-5 sm:px-4">
+            <div class="pointer-events-none absolute inset-y-5 left-1/2 hidden w-[148px] -translate-x-1/2 rounded-[22px] border border-dashed border-cyan-300/20 bg-cyan-400/[0.05] lg:block" />
+            <div class="pointer-events-none absolute left-1/2 top-7 hidden -translate-x-1/2 text-center lg:block">
+              <p class="text-[11px] uppercase tracking-[0.24em] text-cyan-100/70">Center show lane</p>
+              <p class="mt-2 max-w-[150px] text-xs leading-5 text-slate-400">Keep this lane open. Flip a card, then send it cleanly to the middle table.</p>
+            </div>
+
+            <PlayerHand
+              :cards="selfCards"
+              :empty-label="selfPlayer?.isAdjudicator ? 'Adjudicator' : 'Waiting for deal'"
+              :flip-key="room.game.round"
+              :selected-card-type="selectedCardType"
+              :pending-card-type="pendingPlayCardType"
+              :interaction-locked="playIntentLocked"
+              :spread-apart="true"
+              @card-click="handleSelfCardClick"
+            />
+          </div>
         </div>
         <div v-if="selectedCardType" class="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-[22px] border px-4 py-3 text-sm transition duration-300" :class="playPromptClass">
           <p>{{ playPromptText }}</p>
