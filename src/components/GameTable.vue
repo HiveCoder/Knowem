@@ -79,6 +79,28 @@
                 <Deck :round="room.game.round" :trigger-key="lastDealtAt || room.game.round" :seats="deckTargets" />
 
                 <div class="relative z-10 flex min-h-[250px] flex-col items-center justify-center gap-4 sm:min-h-[280px]">
+                  <transition name="table-play">
+                    <div v-if="playedCard" :key="playedCard.id" class="pointer-events-none absolute inset-x-0 top-4 flex justify-center px-4">
+                      <div class="flex flex-col items-center gap-2 rounded-[28px] border border-white/10 bg-[rgba(10,14,26,0.56)] px-3 py-3 backdrop-blur-md shadow-[0_24px_60px_rgba(2,6,23,0.32)] sm:px-4">
+                        <Card
+                          :title="playedCard.title"
+                          :subtitle="playedCard.subtitle"
+                          :tone="playedCard.tone"
+                          :is-flipped="true"
+                          :is-wild="playedCard.isWild"
+                          :is-played="true"
+                          :play-animation-key="playedCardAnimationKey"
+                          size="md"
+                          badge-label="Played"
+                          back-label="Played card"
+                        />
+                        <p class="text-center text-[11px] uppercase tracking-[0.24em] text-slate-300">
+                          {{ playedCard.username }} played {{ playedCard.isWild ? 'a wild card' : 'to center table' }}
+                        </p>
+                      </div>
+                    </div>
+                  </transition>
+
                   <UiBadge tone="muted">Active cards</UiBadge>
 
                   <div class="w-full overflow-hidden rounded-[24px] border border-white/10 bg-slate-950/45 px-3 py-5 shadow-[0_18px_40px_rgba(2,6,23,0.16)] sm:px-4">
@@ -203,7 +225,16 @@
         </div>
 
         <div class="mt-6 overflow-hidden rounded-[28px] border border-white/10 bg-[rgba(8,12,22,0.42)] px-3 py-5 sm:px-5 sm:py-5">
-          <PlayerHand :cards="selfCards" :empty-label="selfPlayer?.isAdjudicator ? 'Adjudicator' : 'Waiting for deal'" :flip-key="room.game.round" />
+          <PlayerHand
+            :cards="selfCards"
+            :empty-label="selfPlayer?.isAdjudicator ? 'Adjudicator' : 'Waiting for deal'"
+            :flip-key="room.game.round"
+            @card-click="handleSelfCardClick"
+          />
+        </div>
+        <div v-if="canPlaySelectedCard" class="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-[22px] border border-amber-400/20 bg-amber-400/10 px-4 py-3 text-sm text-amber-100">
+          <p>Selected {{ selectedCardLabel }}. Play it to the center table for everyone to see.</p>
+          <UiButton variant="secondary" class="!border-amber-200/30 !text-amber-50" @click="playSelectedCard">Play card to center</UiButton>
         </div>
         <p class="mt-5 text-sm text-slate-400">{{ statusLine }}</p>
       </UiPanel>
@@ -215,13 +246,14 @@
 
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
+import Card from './Card.vue'
 import Deck from './Deck.vue'
 import EndRoundModal from './EndRoundModal.vue'
 import PlayerHand, { type HandCardItem } from './PlayerHand.vue'
 import UiBadge from '@/components/ui/UiBadge.vue'
 import UiButton from '@/components/ui/UiButton.vue'
 import UiPanel from '@/components/ui/UiPanel.vue'
-import type { PrivateState, RoomState } from '@/types/game'
+import type { PlayedCardType, PrivateState, RoomState } from '@/types/game'
 
 const WILD_CARD_DETAILS = {
   forced_truth: {
@@ -282,17 +314,20 @@ const props = defineProps<{
   selfId: string
   canAdvance: boolean
   lastDealtAt: number
+  lastCardPlayedAt: number
 }>()
 
 const emit = defineEmits<{
   submitAnswer: [answer: string]
   submitVote: [guesses: Record<string, 'truth' | 'false'>]
+  playCard: [cardType: PlayedCardType]
   nextRound: []
 }>()
 
 const draftAnswer = ref('')
 const showResults = ref(true)
 const guesses = reactive<Record<string, 'truth' | 'false'>>({})
+const selectedCardType = ref<PlayedCardType | null>(null)
 
 const focusSeatPresets = [
   { left: 50, top: 14 },
@@ -308,6 +343,7 @@ watch(
   () => {
     draftAnswer.value = ''
     showResults.value = true
+    selectedCardType.value = null
     for (const key of Object.keys(guesses)) {
       delete guesses[key]
     }
@@ -333,6 +369,8 @@ const canSubmitAnswer = computed(() => {
 const judgableAnswers = computed(() => props.room.players.filter((player) => !player.isAdjudicator && player.answerText))
 const canSubmitVotes = computed(() => judgableAnswers.value.length > 0 && judgableAnswers.value.every((player) => guesses[player.id]))
 const phaseLabel = computed(() => props.room.game.phase.replace('_', ' '))
+const playedCard = computed(() => props.room.game.playedCard)
+const playedCardAnimationKey = computed(() => playedCard.value?.playedAt ?? props.lastCardPlayedAt)
 const phaseTitle = computed(() => {
   if (props.room.game.phase === 'question_reveal') {
     return 'Question is live. Time to shape the story.'
@@ -389,6 +427,8 @@ const focusCards = computed<HandCardItem[]>(() => {
 
   return selfCards.value
 })
+const canPlaySelectedCard = computed(() => Boolean(selectedCardType.value && canAnswer.value && !selfPlayer.value?.hasAnswered))
+const selectedCardLabel = computed(() => (selectedCardType.value === 'wild' ? 'wild card' : 'primary card'))
 
 const deckTargets = computed(() =>
   topPlayers.value
@@ -419,6 +459,9 @@ function handCardsForPlayer(player: RoomState['players'][number] | null, isSelf:
         subtitle: props.privateState?.primaryCard === 'false' ? 'Lie convincingly' : 'Tell the truth',
         tone: props.privateState?.primaryCard === 'false' ? 'false' : 'truth',
         revealed: true,
+        isFlipped: true,
+        playable: canAnswer.value,
+        cardType: 'primary',
         badgeLabel: 'Primary',
       },
       {
@@ -427,6 +470,10 @@ function handCardsForPlayer(player: RoomState['players'][number] | null, isSelf:
         subtitle: wildDetails.subtitle,
         tone: 'wild',
         revealed: true,
+        isFlipped: true,
+        isWild: true,
+        playable: canAnswer.value && Boolean(props.privateState?.wildCard),
+        cardType: 'wild',
         badgeLabel: 'Wild',
       },
     ]
@@ -441,6 +488,7 @@ function handCardsForPlayer(player: RoomState['players'][number] | null, isSelf:
         subtitle: player.botPersonalityLabel || 'Revealed role',
         tone: player.primaryCardKnown === 'false' ? 'false' : 'truth',
         revealed: true,
+        isFlipped: true,
         badgeLabel: 'Reveal',
       },
       {
@@ -449,6 +497,8 @@ function handCardsForPlayer(player: RoomState['players'][number] | null, isSelf:
         subtitle: player.wildCardKnown ? wildDetails.subtitle : 'No modifier this round',
         tone: 'wild',
         revealed: true,
+        isFlipped: true,
+        isWild: Boolean(player.wildCardKnown),
         badgeLabel: 'Wild',
       },
     ]
@@ -507,6 +557,17 @@ function submitOwnAnswer() {
   emit('submitAnswer', draftAnswer.value.trim())
 }
 
+function handleSelfCardClick(card: HandCardItem & { isFlipped: boolean }) {
+  selectedCardType.value = card.isFlipped && card.cardType ? card.cardType : null
+}
+
+function playSelectedCard() {
+  if (!selectedCardType.value) {
+    return
+  }
+  emit('playCard', selectedCardType.value)
+}
+
 function describeWildCard(wildCard: PrivateState['wildCard']) {
   if (!wildCard) {
     return {
@@ -530,3 +591,16 @@ function dismissResults() {
   showResults.value = false
 }
 </script>
+
+<style scoped>
+.table-play-enter-active,
+.table-play-leave-active {
+  transition: opacity 260ms ease, transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.table-play-enter-from,
+.table-play-leave-to {
+  opacity: 0;
+  transform: translateY(56px) scale(0.84);
+}
+</style>

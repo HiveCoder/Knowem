@@ -57,8 +57,10 @@
           :self-id="game.playerId"
           :can-advance="game.isHost"
           :last-dealt-at="game.lastDealtAt"
+          :last-card-played-at="game.lastCardPlayedAt"
           @submit-answer="game.submitAnswer"
           @submit-vote="game.submitVote"
+          @play-card="game.playCard"
           @next-round="game.nextRound"
         />
 

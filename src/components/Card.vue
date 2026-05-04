@@ -2,12 +2,25 @@
   <div
     ref="shellRef"
     class="card-shell"
-    :class="[sizeClass, selected ? 'card-shell-selected' : '', imageMode ? 'card-shell-image' : '']"
+    :class="[
+      sizeClass,
+      selected ? 'card-shell-selected' : '',
+      imageMode ? 'card-shell-image' : '',
+      interactive ? 'card-shell-interactive' : '',
+      isPlayed ? 'card-shell-played' : '',
+      showWildBadge ? 'card-shell-wild' : '',
+    ]"
     :style="shellStyle"
+    :role="interactive ? 'button' : undefined"
+    :tabindex="interactive ? 0 : undefined"
     @pointermove="handlePointerMove"
     @pointerleave="resetPointerTilt"
+    @click="handleActivate"
+    @keydown.enter.prevent="handleActivate"
+    @keydown.space.prevent="handleActivate"
   >
     <div class="card-specular" aria-hidden="true" />
+    <div v-if="showWildBadge" class="card-wild-badge">WILD CARD</div>
     <div ref="innerRef" class="card-inner will-change-transform">
       <div class="card-face card-back" :class="backToneClass">
         <div v-if="backImageSrc" class="card-media-surface">
@@ -69,7 +82,12 @@ const props = withDefaults(
     title: string
     subtitle?: string
     tone?: 'truth' | 'false' | 'wild' | 'question' | 'neutral'
+    isFlipped?: boolean
     revealed?: boolean
+    isWild?: boolean
+    isPlayed?: boolean
+    interactive?: boolean
+    playAnimationKey?: string | number
     flipKey?: string | number
     size?: 'sm' | 'md'
     backLabel?: string
@@ -78,7 +96,12 @@ const props = withDefaults(
   }>(),
   {
     tone: 'neutral',
+    isFlipped: undefined,
     revealed: false,
+    isWild: false,
+    isPlayed: false,
+    interactive: false,
+    playAnimationKey: '',
     flipKey: '',
     size: 'md',
     backLabel: 'Hidden card',
@@ -87,11 +110,17 @@ const props = withDefaults(
   },
 )
 
+const emit = defineEmits<{
+  activate: []
+}>()
+
 const innerRef = ref<HTMLElement | null>(null)
 const shellRef = ref<HTMLElement | null>(null)
 const tiltX = ref(0)
 const tiltY = ref(0)
 const glowOpacity = ref(0)
+const resolvedFlipped = computed(() => props.isFlipped ?? props.revealed)
+const showWildBadge = computed(() => props.isWild || props.tone === 'wild')
 
 const sizeClass = computed(() => (props.size === 'sm' ? 'aspect-[826/574] w-[7.1rem] sm:w-[7.75rem]' : 'aspect-[826/574] w-[10rem] sm:w-[11rem]'))
 const frontImageSrc = computed(() => resolveCardFrontImage(props.title))
@@ -201,38 +230,110 @@ const shellStyle = computed(() => ({
 
 async function animateFlip() {
   await nextTick()
-  if (!innerRef.value) {
+  if (!innerRef.value || !shellRef.value) {
     return
   }
 
-  gsap.killTweensOf(innerRef.value)
+  gsap.killTweensOf([innerRef.value, shellRef.value])
   gsap.timeline()
-    .to(innerRef.value, {
-      scale: 0.985,
-      duration: 0.12,
+    .to(shellRef.value, {
+      y: -8,
+      scale: 1.02,
+      duration: 0.16,
       ease: 'power2.out',
       force3D: true,
     })
     .to(
       innerRef.value,
       {
-        rotateY: props.revealed ? 180 : 0,
-        duration: 0.62,
-        ease: 'power3.inOut',
+        rotateY: resolvedFlipped.value ? 180 : 0,
+        duration: 0.56,
+        ease: 'power2.inOut',
         force3D: true,
       },
       0,
     )
     .to(
-      innerRef.value,
+      shellRef.value,
       {
+        y: 0,
         scale: 1,
-        duration: 0.28,
+        duration: 0.32,
         ease: 'power2.out',
         force3D: true,
       },
-      0.28,
+      0.24,
     )
+}
+
+async function animatePlayedState() {
+  await nextTick()
+  if (!shellRef.value || !innerRef.value || !props.isPlayed) {
+    return
+  }
+
+  gsap.killTweensOf([shellRef.value, innerRef.value])
+  const timeline = gsap.timeline()
+  timeline
+    .fromTo(
+      shellRef.value,
+      {
+        y: 46,
+        scale: 0.84,
+        opacity: 0,
+        filter: 'drop-shadow(0 8px 18px rgba(0,0,0,0.18))',
+      },
+      {
+        y: -10,
+        scale: props.isWild ? 1.12 : 1.04,
+        opacity: 1,
+        duration: 0.26,
+        ease: 'power3.out',
+      },
+    )
+    .to(
+      innerRef.value,
+      {
+        rotateY: 180,
+        duration: 0.52,
+        ease: 'power2.inOut',
+      },
+      0.08,
+    )
+    .to(
+      shellRef.value,
+      {
+        y: 0,
+        scale: 1,
+        duration: 0.3,
+        ease: 'bounce.out',
+      },
+      props.isWild ? '>-0.02' : '>-=0.02',
+    )
+
+  if (props.isWild) {
+    timeline
+      .to(
+        shellRef.value,
+        {
+          boxShadow: '0 0 0 1px rgba(251,191,36,0.55), 0 0 24px rgba(251,191,36,0.45), 0 18px 38px rgba(15,23,42,0.46)',
+          duration: 0.2,
+          ease: 'power1.out',
+        },
+        0.12,
+      )
+      .to(
+        shellRef.value,
+        {
+          boxShadow: '0 0 0 1px rgba(251,191,36,0.28), 0 0 12px rgba(251,191,36,0.28), 0 16px 34px rgba(15,23,42,0.34)',
+          repeat: 1,
+          yoyo: true,
+          duration: 0.24,
+          ease: 'sine.inOut',
+        },
+        0.34,
+      )
+  }
 }
 
 function handlePointerMove(event: PointerEvent) {
@@ -255,12 +356,21 @@ function resetPointerTilt() {
   glowOpacity.value = 0
 }
 
-watch(() => [props.revealed, props.flipKey], animateFlip)
+function handleActivate() {
+  if (!props.interactive) {
+    return
+  }
+
+  emit('activate')
+}
+
+watch(() => [resolvedFlipped.value, props.flipKey], animateFlip)
+watch(() => [props.isPlayed, props.playAnimationKey], animatePlayedState)
 
 onMounted(() => {
   if (innerRef.value) {
     gsap.set(innerRef.value, {
-      rotateY: props.revealed ? 180 : 0,
+      rotateY: resolvedFlipped.value ? 180 : 0,
       transformPerspective: 1200,
       transformStyle: 'preserve-3d',
     })
@@ -285,8 +395,20 @@ onMounted(() => {
   filter: brightness(1.02);
 }
 
+.card-shell-interactive {
+  cursor: pointer;
+}
+
 .card-shell-selected {
   transform: translateY(-4px) rotateX(var(--card-tilt-x)) rotateY(var(--card-tilt-y));
+}
+
+.card-shell-played {
+  filter: drop-shadow(0 22px 42px rgba(2, 6, 23, 0.38));
+}
+
+.card-shell-wild {
+  filter: drop-shadow(0 18px 36px rgba(245, 158, 11, 0.28));
 }
 
 .card-shell-image {
@@ -305,6 +427,23 @@ onMounted(() => {
     linear-gradient(120deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0) 32%, rgba(255, 255, 255, 0.08) 55%, rgba(255, 255, 255, 0) 72%);
   mix-blend-mode: screen;
   transition: opacity 180ms ease;
+}
+
+.card-wild-badge {
+  position: absolute;
+  right: 0.75rem;
+  top: 0.75rem;
+  z-index: 4;
+  border-radius: 9999px;
+  border: 1px solid rgba(251, 191, 36, 0.4);
+  background: rgba(120, 53, 15, 0.68);
+  color: rgb(254 243 199);
+  padding: 0.24rem 0.58rem;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  box-shadow: 0 0 18px rgba(251, 191, 36, 0.18);
 }
 
 .card-inner {

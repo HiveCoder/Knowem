@@ -4,9 +4,11 @@ import { getSocket, getSocketUrl, getSocketWarning } from '@/services/socket'
 import type {
   AdjudicatorVotePayload,
   BotDifficulty,
+  CardPlayedEvent,
   ChatMessage,
   ChatPayload,
   JoinRoomPayload,
+  PlayCardPayload,
   PrivateState,
   RoomState,
   SubmitAnswerPayload,
@@ -23,6 +25,7 @@ export const useGameStore = defineStore('game', () => {
   const playerId = ref('')
   const latestError = ref('')
   const lastDealtAt = ref(0)
+  const lastCardPlayedAt = ref(0)
   const connectionState = ref<ConnectionState>('connecting')
   const reconnectNotice = ref('')
   const backendStatusMessage = ref('')
@@ -53,6 +56,10 @@ export const useGameStore = defineStore('game', () => {
 
     socket.on('deal_cards', () => {
       lastDealtAt.value = Date.now()
+    })
+
+    socket.on('cardPlayed', (payload: CardPlayedEvent) => {
+      lastCardPlayedAt.value = payload.playedAt
     })
 
     socket.on('room_error', (message: string) => {
@@ -238,6 +245,19 @@ export const useGameStore = defineStore('game', () => {
     })
   }
 
+  function playCard(cardType: PlayCardPayload['cardType']) {
+    if (!roomCode.value) {
+      return
+    }
+    const payload: PlayCardPayload = {
+      roomCode: roomCode.value,
+      cardType,
+    }
+    withSocket((instance) => {
+      instance.emit('card_played', payload)
+    })
+  }
+
   function nextRound() {
     if (!roomCode.value) {
       return
@@ -278,6 +298,7 @@ export const useGameStore = defineStore('game', () => {
     canStart,
     latestError,
     lastDealtAt,
+    lastCardPlayedAt,
     createRoom,
     joinRoom,
     leaveRoom,
@@ -288,6 +309,7 @@ export const useGameStore = defineStore('game', () => {
     updateBotSettings,
     submitAnswer,
     submitVote,
+    playCard,
     nextRound,
     sendChatMessage,
     clearError,

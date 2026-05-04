@@ -9,20 +9,26 @@
         v-for="(card, index) in cards"
         :key="card.id"
         class="relative shrink-0 will-change-transform transition duration-200"
+        :class="card.playable ? 'cursor-pointer touch-manipulation' : ''"
         :style="cardStyle(index, hoveredIndex === index)"
         @mouseenter="hoveredIndex = index"
         @mouseleave="hoveredIndex = null"
+        @click="handleCardClick(card)"
       >
         <Card
           :title="card.title"
           :subtitle="card.subtitle"
           :tone="card.tone"
-          :revealed="card.revealed"
+          :is-flipped="resolveFlipped(card)"
+          :is-wild="card.isWild"
+          :is-played="card.isPlayed"
           :selected="hoveredIndex === index"
           :flip-key="flipKey"
           :size="compact ? 'sm' : 'md'"
           :back-label="card.backLabel || 'Hidden card'"
           :badge-label="card.badgeLabel || 'Knowem'"
+          :interactive="card.playable"
+          :play-animation-key="card.playAnimationKey"
         />
       </div>
     </div>
@@ -30,8 +36,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import Card from './Card.vue'
+import type { PlayedCardType } from '@/types/game'
 
 export interface HandCardItem {
   id: string
@@ -39,6 +46,12 @@ export interface HandCardItem {
   subtitle?: string
   tone: 'truth' | 'false' | 'wild' | 'neutral'
   revealed: boolean
+  isFlipped?: boolean
+  isWild?: boolean
+  isPlayed?: boolean
+  playable?: boolean
+  cardType?: PlayedCardType
+  playAnimationKey?: string | number
   backLabel?: string
   badgeLabel?: string
 }
@@ -57,7 +70,20 @@ const props = withDefaults(
   },
 )
 
+const emit = defineEmits<{
+  cardClick: [card: HandCardItem & { isFlipped: boolean }]
+}>()
+
 const hoveredIndex = ref<number | null>(null)
+const localFlipState = ref<Record<string, boolean>>({})
+
+watch(
+  () => [props.flipKey, props.cards.map((card) => card.id).join('|')],
+  () => {
+    localFlipState.value = {}
+  },
+  { immediate: true },
+)
 
 const containerClass = computed(() => (props.compact ? 'min-h-24 w-full max-w-[320px]' : 'min-h-36 w-full max-w-[560px]'))
 const handClass = computed(() =>
@@ -76,5 +102,25 @@ function cardStyle(index: number, hovered: boolean) {
     transform: `translateY(${lift}px) rotate(${rotate}deg) scale(${scale})`,
     zIndex: hovered ? props.cards.length + 2 : index + 1,
   }
+}
+
+function resolveFlipped(card: HandCardItem) {
+  return localFlipState.value[card.id] ?? card.isFlipped ?? card.revealed
+}
+
+function handleCardClick(card: HandCardItem) {
+  if (!card.playable) {
+    return
+  }
+
+  const nextFlipped = !resolveFlipped(card)
+  localFlipState.value = {
+    ...localFlipState.value,
+    [card.id]: nextFlipped,
+  }
+  emit('cardClick', {
+    ...card,
+    isFlipped: nextFlipped,
+  })
 }
 </script>

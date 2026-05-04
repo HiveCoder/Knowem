@@ -4,12 +4,16 @@ import type {
   BotPersonalityId,
   BotSettings,
   ChatMessage,
+  CardPlayedEvent,
   EffectiveRole,
   GameState,
   JoinRoomPayload,
+  PlayCardPayload,
   Player,
   PrimaryCard,
   PrivateState,
+  PlayedCardState,
+  PlayedCardType,
   PublicPlayer,
   RoomState,
   RoundResult,
@@ -321,6 +325,7 @@ export class GameEngine {
     room.game.phase = 'question_reveal'
     room.game.question = sample(QUESTIONS)
     room.game.results = []
+    room.game.playedCard = null
     room.game.turnEndsAt = Date.now() + 75_000
     room.game.adjudicatorId = this.pickNextAdjudicator(room, players)
     const question = room.game.question ?? 'Tell the story.'
@@ -393,6 +398,26 @@ export class GameEngine {
     }
 
     this.progressBots(room)
+  }
+
+  playCard(playerId: string, payload: PlayCardPayload): CardPlayedEvent {
+    const room = this.requireRoom(payload.roomCode)
+    if (!room.game.started) {
+      throw new Error('The game has not started yet.')
+    }
+
+    const player = this.requirePlayer(room, playerId)
+    if (player.id === room.game.adjudicatorId) {
+      throw new Error('The adjudicator cannot play cards to the table.')
+    }
+
+    const playedCard = buildPlayedCardState(player, payload.cardType)
+    room.game.playedCard = playedCard
+
+    return {
+      roomCode: room.code,
+      ...playedCard,
+    }
   }
 
   adjudicatorVote(playerId: string, payload: AdjudicatorVotePayload) {
@@ -514,6 +539,7 @@ export class GameEngine {
         question: null,
         turnEndsAt: null,
         results: [],
+        playedCard: null,
       },
     }
   }
@@ -940,5 +966,69 @@ function resolveWildOutcome(input: {
     awardedToAdjudicator,
     awardedToPlayer,
     effectSummary,
+  }
+}
+
+function buildPlayedCardState(player: Player, cardType: PlayedCardType): PlayedCardState {
+  const playedAt = Date.now()
+
+  if (cardType === 'primary') {
+    if (!player.primaryCard) {
+      throw new Error('No primary card is available to play.')
+    }
+
+    return {
+      id: `${player.id}:primary:${playedAt}`,
+      playerId: player.id,
+      username: player.username,
+      cardType,
+      isWild: false,
+      title: player.primaryCard === 'false' ? 'False Card' : 'Truth Card',
+      subtitle: player.primaryCard === 'false' ? 'Played from hand as a bluff role.' : 'Played from hand as an honest role.',
+      tone: player.primaryCard === 'false' ? 'false' : 'truth',
+      playedAt,
+    }
+  }
+
+  if (!player.wildCard) {
+    throw new Error('No wild card is available to play.')
+  }
+
+  const details = getWildCardPresentation(player.wildCard)
+  return {
+    id: `${player.id}:wild:${playedAt}`,
+    playerId: player.id,
+    username: player.username,
+    cardType,
+    isWild: true,
+    title: details.title,
+    subtitle: details.subtitle,
+    tone: 'wild',
+    playedAt,
+  }
+}
+
+function getWildCardPresentation(wildCard: Exclude<WildCard, null>) {
+  switch (wildCard) {
+    case 'forced_truth':
+      return { title: 'Forced Truth', subtitle: 'Truth overrides the base role.' }
+    case 'forced_bluff':
+      return { title: 'Forced Bluff', subtitle: 'A bluff overrides the base role.' }
+    case 'counter':
+      return { title: 'Counter Card', subtitle: 'Blocks the judge bonus on a correct read.' }
+    case 'double_bluff':
+      return { title: 'Double Bluff', subtitle: 'A missed lie pays extra.' }
+    case 'echo':
+      return { title: 'Echo', subtitle: 'A missed read echoes into bonus pressure.' }
+    case 'misdirect':
+      return { title: 'Misdirect', subtitle: 'The revealed role flips at scoring time.' }
+    case 'reverse_read':
+      return { title: 'Reverse Read', subtitle: 'The judge call flips before scoring.' }
+    case 'safe_pass':
+      return { title: 'Safe Pass', subtitle: 'You can pass and still bank a guarded point.' }
+    case 'silencer':
+      return { title: 'Silencer', subtitle: 'Your answer text stays hidden while judged.' }
+    case 'spotlight':
+      return { title: 'Spotlight', subtitle: 'The score swing doubles on this play.' }
   }
 }

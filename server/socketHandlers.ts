@@ -1,5 +1,5 @@
 import type { Server } from 'socket.io'
-import type { AdjudicatorVotePayload, ChatPayload, JoinRoomPayload, SubmitAnswerPayload, UpdateBotSettingsPayload } from '../shared/game.js'
+import type { AdjudicatorVotePayload, ChatPayload, JoinRoomPayload, PlayCardPayload, SubmitAnswerPayload, UpdateBotSettingsPayload } from '../shared/game.js'
 import { GameEngine } from './gameEngine.js'
 
 export function registerSocketHandlers(io: Server, engine: GameEngine) {
@@ -112,6 +112,19 @@ export function registerSocketHandlers(io: Server, engine: GameEngine) {
         syncRoom(payload.roomCode)
       } catch (error) {
         socket.emit('room_error', error instanceof Error ? error.message : 'Unable to submit answer.')
+      }
+    })
+
+    socket.on('card_played', (payload: PlayCardPayload) => {
+      try {
+        if (!currentPlayerId) {
+          return
+        }
+        const event = engine.playCard(currentPlayerId, payload)
+        io.to(payload.roomCode).emit('cardPlayed', event)
+        syncRoom(payload.roomCode)
+      } catch (error) {
+        socket.emit('room_error', error instanceof Error ? error.message : 'Unable to play card.')
       }
     })
 

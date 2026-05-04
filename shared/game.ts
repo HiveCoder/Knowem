@@ -14,8 +14,22 @@ export type WildCard =
   | 'spotlight'
   | null
 export type EffectiveRole = 'truth' | 'false'
+export type CardTone = 'truth' | 'false' | 'wild' | 'question' | 'neutral'
+export type PlayedCardType = 'primary' | 'wild'
 export type BotDifficulty = 'easy' | 'medium' | 'hard'
 export type BotPersonalityId = 'bluffer' | 'oversharer' | 'hawk'
+
+export interface PlayedCardState {
+  id: string
+  playerId: string
+  username: string
+  cardType: PlayedCardType
+  isWild: boolean
+  title: string
+  subtitle?: string
+  tone: CardTone
+  playedAt: number
+}
 
 export interface BotSettings {
   difficulty: BotDifficulty
@@ -93,6 +107,7 @@ export interface GameState {
   question: string | null
   turnEndsAt: number | null
   results: RoundResult[]
+  playedCard: PlayedCardState | null
 }
 
 export interface RoomState {
@@ -126,6 +141,15 @@ export interface JoinRoomPayload {
 export interface SubmitAnswerPayload {
   roomCode: string
   answer: string
+}
+
+export interface PlayCardPayload {
+  roomCode: string
+  cardType: PlayedCardType
+}
+
+export interface CardPlayedEvent extends PlayedCardState {
+  roomCode: string
 }
 
 export interface AdjudicatorVotePayload {
