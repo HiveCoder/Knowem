@@ -76,7 +76,7 @@
               </div>
 
               <div class="relative mx-auto w-full max-w-[580px] overflow-hidden rounded-[28px] border border-white/10 bg-[rgba(8,12,22,0.34)] px-4 py-5 backdrop-blur-md sm:px-5 sm:py-5">
-                <Deck :round="room.game.round" :trigger-key="lastDealtAt || room.game.round" :seats="deckTargets" />
+                <Deck :round="room.game.round" :trigger-key="lastDealtAt || room.game.round" :seats="deckTargets" :hidden="centerRevealActive" />
 
                 <div class="relative z-10 flex min-h-[360px] flex-col items-center justify-start gap-4 pt-2 sm:min-h-[412px]">
                   <div class="flex min-h-[252px] w-full items-center justify-center rounded-[24px] border border-dashed border-white/10 bg-[radial-gradient(circle_at_top,rgba(148,163,184,0.08),rgba(15,23,42,0.18)_60%,rgba(2,6,23,0.4))] px-4 py-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] sm:min-h-[280px]">
@@ -285,6 +285,7 @@
               :pending-card-type="pendingPlayCardType"
               :interaction-locked="playIntentLocked"
               :spread-apart="true"
+              :center-reveal-active="centerRevealActive"
               @card-click="handleSelfCardClick"
             />
           </div>
@@ -456,6 +457,7 @@ const stageCard = computed(() => {
 
   return playedCard.value
 })
+const centerRevealActive = computed(() => Boolean(stageCard.value))
 const stageCardIsPending = computed(() => Boolean(pendingHandCard.value))
 const stageCardKey = computed(() => (stageCardIsPending.value ? `pending-${playIntentAt.value}` : stageCard.value?.id ?? 'empty-stage'))
 const stageCardAnimationKey = computed(() => (stageCardIsPending.value ? playIntentAt.value : playedCardAnimationKey.value))

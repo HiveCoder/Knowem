@@ -1,5 +1,5 @@
 <template>
-  <div ref="tableRef" class="pointer-events-none absolute inset-0 z-20 overflow-hidden">
+  <div ref="tableRef" class="pointer-events-none absolute inset-0 z-20 overflow-hidden transition-opacity duration-200" :class="props.hidden ? 'opacity-0' : 'opacity-100'">
     <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
       <div class="relative h-20 w-28 sm:h-24 sm:w-36">
         <div
@@ -47,6 +47,7 @@ const props = defineProps<{
   round: number
   triggerKey: number
   seats: SeatTarget[]
+  hidden?: boolean
 }>()
 
 const tableRef = ref<HTMLElement | null>(null)

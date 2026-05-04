@@ -67,6 +67,7 @@ const props = withDefaults(
     pendingCardType?: PlayedCardType | null
     interactionLocked?: boolean
     spreadApart?: boolean
+    centerRevealActive?: boolean
   }>(),
   {
     compact: false,
@@ -76,6 +77,7 @@ const props = withDefaults(
     pendingCardType: null,
     interactionLocked: false,
     spreadApart: false,
+    centerRevealActive: false,
   },
 )
 
@@ -119,18 +121,22 @@ function isCardSelected(card: HandCardItem, index: number) {
 
 function cardStyle(card: HandCardItem, index: number, hovered: boolean) {
   const centerOffset = index - (props.cards.length - 1) / 2
-  const baseLift = props.compact ? 0 : props.spreadApart ? Math.abs(centerOffset) * 1.2 : Math.abs(centerOffset) * 2.2
-  const baseRotate = props.compact ? 0 : props.spreadApart ? centerOffset * 5.5 : centerOffset * 2.8
+  const revealOffsetBoost = props.spreadApart && props.centerRevealActive ? 150 : 34
+  const baseLift = props.compact ? 0 : props.spreadApart ? Math.abs(centerOffset) * (props.centerRevealActive ? 4.5 : 1.2) : Math.abs(centerOffset) * 2.2
+  const baseRotate = props.compact ? 0 : props.spreadApart ? centerOffset * (props.centerRevealActive ? 12 : 5.5) : centerOffset * 2.8
   const selected = isCardSelected(card, index)
   const pending = isPendingCard(card)
-  const spreadX = props.spreadApart ? centerOffset * 34 : 0
-  const lift = pending ? -18 : selected ? baseLift - (props.spreadApart ? 8 : 11) : baseLift * -1
+  const revealLift = props.spreadApart && props.centerRevealActive ? 18 : 0
+  const spreadX = props.spreadApart ? centerOffset * revealOffsetBoost : 0
+  const lift = pending ? -18 : selected ? baseLift - (props.spreadApart ? 8 : 11) : baseLift * -1 + revealLift
   const rotate = pending ? baseRotate * 0.12 : selected ? baseRotate * 0.24 : baseRotate
-  const scale = pending ? 1.02 : selected ? 0.98 : props.spreadApart ? 0.92 : 1
+  const scale = pending ? 1.02 : selected ? (props.centerRevealActive ? 0.86 : 0.98) : props.spreadApart ? (props.centerRevealActive ? 0.8 : 0.92) : 1
+  const opacity = props.spreadApart && props.centerRevealActive && !pending ? 0.72 : 1
 
   return {
     transform: `translateX(${spreadX}px) translateY(${lift}px) rotate(${rotate}deg) scale(${scale})`,
     zIndex: pending ? props.cards.length + 3 : selected ? props.cards.length + 2 : index + 1,
+    opacity,
   }
 }
 
