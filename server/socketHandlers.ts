@@ -6,6 +6,15 @@ export function registerSocketHandlers(io: Server, engine: GameEngine) {
   io.on('connection', (socket) => {
     let currentPlayerId: string | null = null
 
+    function requireBoundPlayer(actionLabel: string) {
+      if (currentPlayerId) {
+        return currentPlayerId
+      }
+
+      socket.emit('room_error', `Realtime session expired before ${actionLabel}. Rejoining the room may be required.`)
+      return null
+    }
+
     const syncRoom = (roomCode: string) => {
       const roomState = engine.getRoomState(roomCode)
       io.to(roomCode).emit('room_state', roomState)
@@ -44,10 +53,11 @@ export function registerSocketHandlers(io: Server, engine: GameEngine) {
 
     socket.on('toggle_ready', ({ roomCode }: { roomCode: string }) => {
       try {
-        if (!currentPlayerId) {
+        const playerId = requireBoundPlayer('changing ready state')
+        if (!playerId) {
           return
         }
-        engine.toggleReady(roomCode, currentPlayerId)
+        engine.toggleReady(roomCode, playerId)
         syncRoom(roomCode)
       } catch (error) {
         socket.emit('room_error', error instanceof Error ? error.message : 'Unable to change ready state.')
@@ -56,10 +66,11 @@ export function registerSocketHandlers(io: Server, engine: GameEngine) {
 
     socket.on('add_bot', ({ roomCode }: { roomCode: string }) => {
       try {
-        if (!currentPlayerId) {
+        const playerId = requireBoundPlayer('adding a bot')
+        if (!playerId) {
           return
         }
-        engine.addBot(roomCode, currentPlayerId)
+        engine.addBot(roomCode, playerId)
         syncRoom(roomCode)
       } catch (error) {
         socket.emit('room_error', error instanceof Error ? error.message : 'Unable to add bot.')
@@ -68,10 +79,11 @@ export function registerSocketHandlers(io: Server, engine: GameEngine) {
 
     socket.on('autofill_bots', ({ roomCode }: { roomCode: string }) => {
       try {
-        if (!currentPlayerId) {
+        const playerId = requireBoundPlayer('auto-filling bots')
+        if (!playerId) {
           return
         }
-        engine.autofillBots(roomCode, currentPlayerId)
+        engine.autofillBots(roomCode, playerId)
         syncRoom(roomCode)
       } catch (error) {
         socket.emit('room_error', error instanceof Error ? error.message : 'Unable to autofill bots.')
@@ -80,10 +92,11 @@ export function registerSocketHandlers(io: Server, engine: GameEngine) {
 
     socket.on('update_bot_settings', (payload: UpdateBotSettingsPayload) => {
       try {
-        if (!currentPlayerId) {
+        const playerId = requireBoundPlayer('updating bot settings')
+        if (!playerId) {
           return
         }
-        engine.updateBotSettings(payload.roomCode, currentPlayerId, payload)
+        engine.updateBotSettings(payload.roomCode, playerId, payload)
         syncRoom(payload.roomCode)
       } catch (error) {
         socket.emit('room_error', error instanceof Error ? error.message : 'Unable to update bot settings.')
@@ -92,10 +105,11 @@ export function registerSocketHandlers(io: Server, engine: GameEngine) {
 
     socket.on('start_game', ({ roomCode }: { roomCode: string }) => {
       try {
-        if (!currentPlayerId) {
+        const playerId = requireBoundPlayer('starting the game')
+        if (!playerId) {
           return
         }
-        engine.startGame(roomCode, currentPlayerId)
+        engine.startGame(roomCode, playerId)
         io.to(roomCode).emit('deal_cards', { roomCode })
         syncRoom(roomCode)
       } catch (error) {
@@ -105,10 +119,11 @@ export function registerSocketHandlers(io: Server, engine: GameEngine) {
 
     socket.on('submit_answer', (payload: SubmitAnswerPayload) => {
       try {
-        if (!currentPlayerId) {
+        const playerId = requireBoundPlayer('submitting an answer')
+        if (!playerId) {
           return
         }
-        engine.submitAnswer(currentPlayerId, payload)
+        engine.submitAnswer(playerId, payload)
         syncRoom(payload.roomCode)
       } catch (error) {
         socket.emit('room_error', error instanceof Error ? error.message : 'Unable to submit answer.')
@@ -117,10 +132,11 @@ export function registerSocketHandlers(io: Server, engine: GameEngine) {
 
     socket.on('card_played', (payload: PlayCardPayload) => {
       try {
-        if (!currentPlayerId) {
+        const playerId = requireBoundPlayer('playing a card')
+        if (!playerId) {
           return
         }
-        const event = engine.playCard(currentPlayerId, payload)
+        const event = engine.playCard(playerId, payload)
         io.to(payload.roomCode).emit('cardPlayed', event)
         syncRoom(payload.roomCode)
       } catch (error) {
@@ -130,10 +146,11 @@ export function registerSocketHandlers(io: Server, engine: GameEngine) {
 
     socket.on('adjudicator_vote', (payload: AdjudicatorVotePayload) => {
       try {
-        if (!currentPlayerId) {
+        const playerId = requireBoundPlayer('submitting a verdict')
+        if (!playerId) {
           return
         }
-        engine.adjudicatorVote(currentPlayerId, payload)
+        engine.adjudicatorVote(playerId, payload)
         syncRoom(payload.roomCode)
       } catch (error) {
         socket.emit('room_error', error instanceof Error ? error.message : 'Unable to submit verdict.')
@@ -152,10 +169,11 @@ export function registerSocketHandlers(io: Server, engine: GameEngine) {
 
     socket.on('chat_message', (payload: ChatPayload) => {
       try {
-        if (!currentPlayerId) {
+        const playerId = requireBoundPlayer('sending a chat message')
+        if (!playerId) {
           return
         }
-        const message = engine.addChatMessage(payload.roomCode, currentPlayerId, payload.message, payload.toPlayerId)
+        const message = engine.addChatMessage(payload.roomCode, playerId, payload.message, payload.toPlayerId)
         if (payload.toPlayerId) {
           syncRoom(payload.roomCode)
         } else {

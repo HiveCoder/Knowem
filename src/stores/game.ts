@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { getSocket, getSocketUrl, getSocketWarning } from '@/services/socket'
+import { useSessionStore } from '@/stores/session'
 import type {
   AdjudicatorVotePayload,
   BotDifficulty,
@@ -19,6 +20,7 @@ type ConnectionState = 'connecting' | 'connected' | 'reconnecting' | 'offline'
 
 export const useGameStore = defineStore('game', () => {
   let socket = null as ReturnType<typeof getSocket> | null
+  const session = useSessionStore()
   const room = ref<RoomState | null>(null)
   const privateState = ref<PrivateState | null>(null)
   const roomCode = ref('')
@@ -69,6 +71,7 @@ export const useGameStore = defineStore('game', () => {
     socket.on('connect', () => {
       connectionState.value = 'connected'
       backendStatusMessage.value = ''
+      restoreJoinedRoom()
     })
 
     socket.on('disconnect', (reason: string) => {
@@ -94,6 +97,7 @@ export const useGameStore = defineStore('game', () => {
       connectionState.value = 'connected'
       backendStatusMessage.value = ''
       reconnectNotice.value = 'Reconnected to the live backend.'
+      restoreJoinedRoom()
     })
 
     socket.on('chat_message', (message: ChatMessage) => {
@@ -134,6 +138,20 @@ export const useGameStore = defineStore('game', () => {
       return
     }
     action(socket)
+  }
+
+  function restoreJoinedRoom() {
+    if (!roomCode.value || !session.hasUsername) {
+      return
+    }
+
+    withSocket((instance) => {
+      instance.emit('join_room', {
+        sessionId: session.sessionId,
+        username: session.username,
+        roomCode: roomCode.value,
+      })
+    })
   }
 
   function createRoom(payload: JoinRoomPayload) {
