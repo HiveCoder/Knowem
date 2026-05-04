@@ -1,5 +1,5 @@
 <template>
-  <div ref="tableRef" class="pointer-events-none absolute inset-0 z-20 overflow-hidden transition-opacity duration-200" :class="props.hidden ? 'opacity-0' : 'opacity-100'">
+  <div ref="tableRef" class="pointer-events-none absolute inset-0 z-20 overflow-hidden" :class="props.hidden ? 'hidden' : ''">
     <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
       <div class="relative h-20 w-28 sm:h-24 sm:w-36">
         <div
@@ -104,6 +104,10 @@ function registerAnchorRef(id: string, element: Element | null) {
 
 async function runDealAnimation() {
   if (props.round < 1) {
+    return
+  }
+
+  if (props.hidden) {
     return
   }
 
@@ -227,4 +231,15 @@ async function runDealAnimation() {
 }
 
 watch(() => props.triggerKey, runDealAnimation)
+watch(
+  () => props.hidden,
+  (hidden) => {
+    if (!hidden) {
+      return
+    }
+
+    gsap.killTweensOf([...stackRefs.value, ...flightRefs.value])
+    gsap.set([...stackRefs.value, ...flightRefs.value], { opacity: 0 })
+  },
+)
 </script>

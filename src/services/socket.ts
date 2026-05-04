@@ -15,8 +15,8 @@ export const socket: Socket | null = SOCKET_URL
       reconnectionDelay: 800,
       reconnectionDelayMax: 5000,
       randomizationFactor: 0.5,
-      timeout: 8000,
-      transports: ['websocket', 'polling'],
+      timeout: 12000,
+      transports: ['polling', 'websocket'],
     })
   : null
 
