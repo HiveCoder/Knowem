@@ -8,6 +8,7 @@
       imageMode ? 'card-shell-image' : '',
       interactive ? 'card-shell-interactive' : '',
       isPlayed ? 'card-shell-played' : '',
+      isPlayed ? 'card-shell-shown' : '',
       pending ? 'card-shell-pending' : '',
       showWildBadge ? 'card-shell-wild' : '',
     ]"
@@ -450,6 +451,17 @@ onMounted(() => {
   filter: drop-shadow(0 22px 42px rgba(2, 6, 23, 0.38));
 }
 
+.card-shell-shown::after {
+  content: '';
+  position: absolute;
+  inset: -0.35rem;
+  border-radius: 1.35rem;
+  border: 1px solid rgba(125, 211, 252, 0.34);
+  box-shadow: 0 0 0 0 rgba(125, 211, 252, 0.24);
+  animation: shown-ring 720ms cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+}
+
 .card-shell-pending {
   filter: drop-shadow(0 20px 38px rgba(56, 189, 248, 0.24));
 }
@@ -509,6 +521,24 @@ onMounted(() => {
   -webkit-backface-visibility: hidden;
   transform-style: preserve-3d;
   overflow: hidden;
+}
+
+@keyframes shown-ring {
+  0% {
+    opacity: 0;
+    transform: scale(0.92);
+    box-shadow: 0 0 0 0 rgba(125, 211, 252, 0.24);
+  }
+
+  35% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.08);
+    box-shadow: 0 0 0 12px rgba(125, 211, 252, 0);
+  }
 }
 
 .card-front {

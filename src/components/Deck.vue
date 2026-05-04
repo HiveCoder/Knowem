@@ -170,6 +170,13 @@ async function runDealAnimation() {
 
   await shuffleTimeline.then()
 
+  gsap.to(stackRefs.value, {
+    opacity: 0,
+    scale: 0.96,
+    duration: 0.16,
+    ease: 'power2.out',
+  })
+
   flightRefs.value.forEach((element, index) => {
     const card = dealSequence.value[index]
     const anchor = card ? anchorRefs.get(card.seatId) : null

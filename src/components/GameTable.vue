@@ -78,12 +78,12 @@
               <div class="relative mx-auto w-full max-w-[580px] overflow-hidden rounded-[28px] border border-white/10 bg-[rgba(8,12,22,0.34)] px-4 py-5 backdrop-blur-md sm:px-5 sm:py-5">
                 <Deck :round="room.game.round" :trigger-key="lastDealtAt || room.game.round" :seats="deckTargets" />
 
-                <div class="relative z-10 flex min-h-[300px] flex-col items-center justify-center gap-4 sm:min-h-[340px]">
-                  <div class="flex min-h-[218px] w-full items-center justify-center rounded-[24px] border border-dashed border-white/10 bg-[radial-gradient(circle_at_top,rgba(148,163,184,0.08),rgba(15,23,42,0.18)_60%,rgba(2,6,23,0.4))] px-4 py-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] sm:min-h-[238px]">
+                <div class="relative z-10 flex min-h-[360px] flex-col items-center justify-start gap-4 pt-2 sm:min-h-[412px]">
+                  <div class="flex min-h-[252px] w-full items-center justify-center rounded-[24px] border border-dashed border-white/10 bg-[radial-gradient(circle_at_top,rgba(148,163,184,0.08),rgba(15,23,42,0.18)_60%,rgba(2,6,23,0.4))] px-4 py-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] sm:min-h-[280px]">
                     <transition name="table-play" mode="out-in">
                       <div v-if="stageCard" :key="stageCardKey" class="pointer-events-none flex justify-center px-2">
                         <div
-                          class="flex flex-col items-center gap-2 rounded-[28px] border px-3 py-3 backdrop-blur-md shadow-[0_24px_60px_rgba(2,6,23,0.32)] sm:px-4"
+                          class="stage-card-shell flex w-full max-w-[250px] shrink-0 flex-col items-center gap-2 rounded-[28px] border px-3 py-3 backdrop-blur-md shadow-[0_24px_60px_rgba(2,6,23,0.32)] sm:max-w-[270px] sm:px-4"
                           :class="stageCardShellClass"
                         >
                           <UiBadge :tone="stageCardBadgeTone">{{ stageCardBadgeLabel }}</UiBadge>
@@ -106,7 +106,7 @@
                         </div>
                       </div>
 
-                      <div v-else key="empty-stage" class="flex max-w-sm flex-col items-center gap-3 text-center">
+                      <div v-else key="empty-stage" class="flex max-w-sm flex-col items-center gap-3 px-3 text-center">
                         <UiBadge tone="muted">Center reveal</UiBadge>
                         <p class="text-base font-medium text-white">The table spotlight is clear.</p>
                         <p class="text-sm leading-6 text-slate-400">{{ centerStageHint }}</p>
@@ -118,11 +118,20 @@
                     <UiBadge tone="muted">Play surface</UiBadge>
                     <UiBadge v-if="selectedCardType && !stageCardIsPending" tone="accent">{{ selectedCardLabel }} selected</UiBadge>
                     <UiBadge v-if="stageCardIsPending" tone="accent">sending to table</UiBadge>
+                    <UiBadge v-if="playedCard && !stageCardIsPending" tone="accent">shown to table</UiBadge>
                   </div>
 
-                  <div class="w-full rounded-[24px] border border-white/10 bg-slate-950/45 px-4 py-4 text-center shadow-[0_18px_40px_rgba(2,6,23,0.16)] transition duration-300" :class="centerTempoClass">
-                    <p class="text-[11px] uppercase tracking-[0.24em] text-slate-500">Table tempo</p>
-                    <p class="mt-3 text-sm leading-6 text-slate-300">{{ centerTempoLine }}</p>
+                  <div class="grid w-full gap-3 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+                    <div class="rounded-[24px] border border-white/10 bg-slate-950/45 px-4 py-4 text-center shadow-[0_18px_40px_rgba(2,6,23,0.16)] transition duration-300" :class="centerTempoClass">
+                      <p class="text-[11px] uppercase tracking-[0.24em] text-slate-500">Table tempo</p>
+                      <p class="mt-3 text-sm leading-6 text-slate-300">{{ centerTempoLine }}</p>
+                    </div>
+                    <div class="rounded-[24px] border border-cyan-300/15 bg-cyan-400/[0.06] px-4 py-4">
+                      <p class="text-[11px] uppercase tracking-[0.24em] text-cyan-100/70">What to do now</p>
+                      <ul class="mt-3 space-y-2 text-sm leading-6 text-slate-200">
+                        <li v-for="item in playerInstructionList" :key="item">{{ item }}</li>
+                      </ul>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -191,6 +200,24 @@
         </div>
 
         <div v-if="!selfPlayer?.isAdjudicator" class="mt-6 space-y-4" v-motion :initial="{ opacity: 0, y: 14 }" :enter="{ opacity: 1, y: 0 }">
+          <div class="rounded-[24px] border border-white/10 bg-white/[0.03] px-4 py-4">
+            <p class="text-[11px] uppercase tracking-[0.24em] text-slate-500">How scoring works</p>
+            <div class="mt-3 grid gap-3 sm:grid-cols-3">
+              <div class="rounded-2xl border border-white/10 bg-slate-950/35 px-3 py-3">
+                <p class="text-sm font-medium text-white">Truth read correctly</p>
+                <p class="mt-1 text-xs leading-5 text-slate-400">The adjudicator gains points for catching an honest answer correctly.</p>
+              </div>
+              <div class="rounded-2xl border border-white/10 bg-slate-950/35 px-3 py-3">
+                <p class="text-sm font-medium text-white">Lie slips through</p>
+                <p class="mt-1 text-xs leading-5 text-slate-400">The player gains points when a bluff lands and the judge misses it.</p>
+              </div>
+              <div class="rounded-2xl border border-white/10 bg-slate-950/35 px-3 py-3">
+                <p class="text-sm font-medium text-white">Wild card effects</p>
+                <p class="mt-1 text-xs leading-5 text-slate-400">Wild modifiers can flip, double, block, or protect points during scoring.</p>
+              </div>
+            </div>
+          </div>
+
           <textarea
             v-model="draftAnswer"
             rows="5"
@@ -522,6 +549,21 @@ const centerTempoClass = computed(() => {
   }
   return ''
 })
+const playerInstructionList = computed(() => {
+  if (selfPlayer.value?.isAdjudicator) {
+    return [
+      'Read each answer and decide whether it sounds like truth or a bluff.',
+      'Watch for wild-card reveals in the middle before locking your verdict.',
+      'Correct reads pay the judge, but some wild cards can reverse or block that payout.',
+    ]
+  }
+
+  return [
+    'Write your answer first, then flip a card in your hand if you want to show it to the room.',
+    'Primary cards show whether you are telling the truth or bluffing this round.',
+    'Wild cards change scoring, protection, or reveal behavior, so show them when the timing helps you most.',
+  ]
+})
 const playPromptClass = computed(() =>
   playIntentLocked.value
     ? 'border-cyan-300/25 bg-cyan-400/10 text-cyan-50'
@@ -752,6 +794,10 @@ function dismissResults() {
 </script>
 
 <style scoped>
+.stage-card-shell {
+  position: relative;
+}
+
 .table-play-enter-active,
 .table-play-leave-active {
   transition: opacity 240ms ease, transform 520ms cubic-bezier(0.22, 1, 0.36, 1), filter 360ms ease;
