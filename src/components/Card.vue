@@ -132,7 +132,7 @@ const glowOpacity = ref(0)
 const resolvedFlipped = computed(() => props.isFlipped ?? props.revealed)
 const showWildBadge = computed(() => props.isWild || props.tone === 'wild')
 
-const sizeClass = computed(() => (props.size === 'sm' ? 'aspect-[826/574] w-[7.1rem] sm:w-[7.75rem]' : 'aspect-[826/574] w-[10rem] sm:w-[11rem]'))
+const sizeClass = computed(() => (props.size === 'sm' ? 'aspect-[826/574] w-[8rem] sm:w-[8.75rem]' : 'aspect-[826/574] w-[11.5rem] sm:w-[12.75rem]'))
 const frontImageSrc = computed(() => resolveCardFrontImage(props.title))
 const backImageSrc = computed(() =>
   resolveCardBackImage({

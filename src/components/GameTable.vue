@@ -33,9 +33,9 @@
     </UiPanel>
 
     <UiPanel padding="lg" class="overflow-hidden">
-      <div class="grid gap-6 lg:grid-cols-[minmax(0,0.86fr)_minmax(0,1.35fr)_minmax(0,0.86fr)] lg:items-start xl:gap-8">
+      <div class="grid gap-7 lg:grid-cols-[minmax(0,0.98fr)_minmax(0,1.52fr)_minmax(0,0.98fr)] lg:items-start xl:gap-10">
         <aside class="order-2 min-w-0 lg:order-1">
-          <div class="rounded-[28px] border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+          <div class="rounded-[28px] border border-white/10 bg-white/[0.03] p-5 sm:p-6">
             <div class="flex items-center justify-between gap-3">
               <div>
                 <p class="text-xs uppercase tracking-[0.3em] text-slate-500">Left lane</p>
@@ -44,12 +44,12 @@
               <UiBadge tone="muted">{{ leftSeats.length }} seats</UiBadge>
             </div>
 
-            <div class="mt-5 grid gap-4 overflow-hidden lg:max-h-[38rem] lg:overflow-y-auto lg:pr-1 soft-scrollbar">
+            <div class="mt-5 grid gap-5 overflow-hidden lg:max-h-[42rem] lg:overflow-y-auto lg:pr-1 soft-scrollbar">
               <div v-if="leftSeats.length === 0" class="rounded-[24px] border border-dashed border-white/10 px-4 py-10 text-center text-sm text-slate-500">
                 Empty lane
               </div>
 
-              <article v-for="seat in leftSeats" :key="seat.player.id" class="overflow-hidden rounded-[24px] border border-white/10 bg-slate-950/40 p-4">
+              <article v-for="seat in leftSeats" :key="seat.player.id" class="overflow-hidden rounded-[24px] border border-white/10 bg-slate-950/40 p-5">
                 <div class="flex items-center justify-between gap-3">
                   <div class="min-w-0">
                     <p class="truncate font-medium text-white">{{ seat.player.username }}</p>
@@ -58,7 +58,7 @@
                   <div class="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-sm font-semibold text-slate-100">{{ seat.player.score }}</div>
                 </div>
 
-                <div class="mt-4 overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.02] px-3 py-4">
+                <div class="mt-4 overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.02] px-3 py-5">
                   <PlayerHand :cards="seat.cards" compact :empty-label="seat.player.isAdjudicator ? 'Judging' : 'Waiting'" :flip-key="room.game.round" />
                 </div>
               </article>
@@ -67,7 +67,7 @@
         </aside>
 
         <div class="order-1 min-w-0 lg:order-2">
-          <div class="poker-table overflow-hidden rounded-[30px] border border-white/10 p-4 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.02),0_24px_60px_rgba(2,6,23,0.22)] sm:p-6">
+          <div class="poker-table overflow-hidden rounded-[30px] border border-white/10 p-5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.02),0_24px_60px_rgba(2,6,23,0.22)] sm:p-7">
             <div class="grid gap-5">
               <div class="rounded-[24px] border border-white/10 bg-[rgba(7,10,18,0.52)] px-5 py-5 text-center backdrop-blur-md sm:px-6">
                 <p class="text-xs uppercase tracking-[0.34em] text-slate-400">Focus area</p>
@@ -75,15 +75,15 @@
                 <p class="mt-3 text-sm leading-6 text-slate-300">{{ phaseTitle }}</p>
               </div>
 
-              <div class="relative mx-auto w-full max-w-[580px] overflow-hidden rounded-[28px] border border-white/10 bg-[rgba(8,12,22,0.34)] px-4 py-5 backdrop-blur-md sm:px-5 sm:py-5">
+              <div class="relative mx-auto w-full max-w-[700px] overflow-hidden rounded-[28px] border border-white/10 bg-[rgba(8,12,22,0.34)] px-5 py-6 backdrop-blur-md sm:px-6 sm:py-6">
                 <Deck :round="room.game.round" :trigger-key="lastDealtAt || room.game.round" :seats="deckTargets" :hidden="centerRevealActive" />
 
-                <div class="relative z-10 flex min-h-[360px] flex-col items-center justify-start gap-4 pt-2 sm:min-h-[412px]">
-                  <div class="flex min-h-[252px] w-full items-center justify-center rounded-[24px] border border-dashed border-white/10 bg-[radial-gradient(circle_at_top,rgba(148,163,184,0.08),rgba(15,23,42,0.18)_60%,rgba(2,6,23,0.4))] px-4 py-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] sm:min-h-[280px]">
+                <div class="relative z-10 flex min-h-[400px] flex-col items-center justify-start gap-5 pt-2 sm:min-h-[452px]">
+                  <div class="flex min-h-[280px] w-full items-center justify-center rounded-[24px] border border-dashed border-white/10 bg-[radial-gradient(circle_at_top,rgba(148,163,184,0.08),rgba(15,23,42,0.18)_60%,rgba(2,6,23,0.4))] px-5 py-7 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] sm:min-h-[320px]">
                     <transition name="table-play" mode="out-in">
                       <div v-if="stageCard" :key="stageCardKey" class="pointer-events-none flex justify-center px-2">
                         <div
-                          class="stage-card-shell flex w-full max-w-[250px] shrink-0 flex-col items-center gap-2 rounded-[28px] border px-3 py-3 backdrop-blur-md shadow-[0_24px_60px_rgba(2,6,23,0.32)] sm:max-w-[270px] sm:px-4"
+                          class="stage-card-shell flex w-full max-w-[320px] shrink-0 flex-col items-center gap-3 rounded-[28px] border px-4 py-4 backdrop-blur-md shadow-[0_24px_60px_rgba(2,6,23,0.32)] sm:max-w-[340px] sm:px-5"
                           :class="stageCardShellClass"
                         >
                           <UiBadge :tone="stageCardBadgeTone">{{ stageCardBadgeLabel }}</UiBadge>
@@ -203,7 +203,7 @@
         </div>
 
         <aside class="order-3 min-w-0">
-          <div class="rounded-[28px] border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+          <div class="rounded-[28px] border border-white/10 bg-white/[0.03] p-5 sm:p-6">
             <div class="flex items-center justify-between gap-3">
               <div>
                 <p class="text-xs uppercase tracking-[0.3em] text-slate-500">Right lane</p>
@@ -212,12 +212,12 @@
               <UiBadge tone="muted">{{ rightSeats.length }} seats</UiBadge>
             </div>
 
-            <div class="mt-5 grid gap-4 overflow-hidden lg:max-h-[38rem] lg:overflow-y-auto lg:pr-1 soft-scrollbar">
+            <div class="mt-5 grid gap-5 overflow-hidden lg:max-h-[42rem] lg:overflow-y-auto lg:pr-1 soft-scrollbar">
               <div v-if="rightSeats.length === 0" class="rounded-[24px] border border-dashed border-white/10 px-4 py-10 text-center text-sm text-slate-500">
                 Empty lane
               </div>
 
-              <article v-for="seat in rightSeats" :key="seat.player.id" class="overflow-hidden rounded-[24px] border border-white/10 bg-slate-950/40 p-4">
+              <article v-for="seat in rightSeats" :key="seat.player.id" class="overflow-hidden rounded-[24px] border border-white/10 bg-slate-950/40 p-5">
                 <div class="flex items-center justify-between gap-3">
                   <div class="min-w-0">
                     <p class="truncate font-medium text-white">{{ seat.player.username }}</p>
@@ -226,7 +226,7 @@
                   <div class="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-sm font-semibold text-slate-100">{{ seat.player.score }}</div>
                 </div>
 
-                <div class="mt-4 overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.02] px-3 py-4">
+                <div class="mt-4 overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.02] px-3 py-5">
                   <PlayerHand :cards="seat.cards" compact :empty-label="seat.player.isAdjudicator ? 'Judging' : 'Waiting'" :flip-key="room.game.round" />
                 </div>
               </article>
@@ -236,8 +236,8 @@
       </div>
     </UiPanel>
 
-    <div class="grid gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
-      <UiPanel padding="lg" class="xl:order-2">
+    <div class="grid gap-6 xl:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)] xl:items-start">
+      <UiPanel padding="lg" class="xl:order-2 xl:sticky xl:top-6">
         <div class="flex items-center justify-between gap-3">
           <div>
             <UiBadge tone="accent">Actions</UiBadge>
@@ -316,8 +316,8 @@
           <UiBadge tone="muted">Hover cards</UiBadge>
         </div>
 
-        <div class="mt-6 overflow-hidden rounded-[28px] border border-white/10 bg-[rgba(8,12,22,0.42)] px-3 py-5 sm:px-5 sm:py-5">
-          <div class="relative overflow-hidden rounded-[24px] border border-white/10 bg-[radial-gradient(circle_at_center,rgba(8,145,178,0.12),rgba(8,12,22,0)_38%)] px-2 py-5 sm:px-4">
+        <div class="mt-6 overflow-hidden rounded-[28px] border border-white/10 bg-[rgba(8,12,22,0.42)] px-4 py-6 sm:px-6 sm:py-6">
+          <div class="relative overflow-hidden rounded-[24px] border border-white/10 bg-[radial-gradient(circle_at_center,rgba(8,145,178,0.12),rgba(8,12,22,0)_38%)] px-3 py-6 sm:px-5">
             <PlayerHand
               :cards="selfCards"
               :empty-label="selfPlayer?.isAdjudicator ? 'Adjudicator' : 'Waiting for deal'"
