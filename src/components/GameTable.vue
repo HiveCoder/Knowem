@@ -115,22 +115,69 @@
                   </div>
 
                   <div class="flex flex-wrap items-center justify-center gap-2">
-                    <UiBadge tone="muted">Play surface</UiBadge>
+                    <UiButton
+                      size="sm"
+                      :variant="centerPanelView === 'instructions' ? 'secondary' : 'ghost'"
+                      @click="centerPanelView = 'instructions'"
+                    >
+                      Instructions
+                    </UiButton>
+                    <UiButton
+                      size="sm"
+                      :variant="centerPanelView === 'cards' ? 'secondary' : 'ghost'"
+                      @click="centerPanelView = 'cards'"
+                    >
+                      Your cards
+                    </UiButton>
                     <UiBadge v-if="selectedCardType && !stageCardIsPending" tone="accent">{{ selectedCardLabel }} selected</UiBadge>
                     <UiBadge v-if="stageCardIsPending" tone="accent">sending to table</UiBadge>
                     <UiBadge v-if="playedCard && !stageCardIsPending" tone="accent">shown to table</UiBadge>
                   </div>
 
-                  <div class="grid w-full gap-3 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-                    <div class="rounded-[24px] border border-white/10 bg-slate-950/45 px-4 py-4 text-center shadow-[0_18px_40px_rgba(2,6,23,0.16)] transition duration-300" :class="centerTempoClass">
-                      <p class="text-[11px] uppercase tracking-[0.24em] text-slate-500">Table tempo</p>
-                      <p class="mt-3 text-sm leading-6 text-slate-300">{{ centerTempoLine }}</p>
+                  <div class="w-full rounded-[24px] border border-white/10 bg-slate-950/45 px-4 py-4 shadow-[0_18px_40px_rgba(2,6,23,0.16)] transition duration-300">
+                    <div v-if="centerPanelView === 'instructions'" class="grid gap-4 lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)] lg:items-start">
+                      <div class="rounded-[20px] border border-white/10 bg-white/[0.03] px-4 py-4 text-center">
+                        <p class="text-[11px] uppercase tracking-[0.24em] text-slate-500">Instruction focus</p>
+                        <p class="mt-3 text-sm leading-6 text-slate-300">{{ centerStageHint }}</p>
+                      </div>
+                      <div class="rounded-[20px] border border-cyan-300/15 bg-cyan-400/[0.06] px-4 py-4">
+                        <p class="text-[11px] uppercase tracking-[0.24em] text-cyan-100/70">How to play this moment</p>
+                        <ul class="mt-3 space-y-2 text-sm leading-6 text-slate-200">
+                          <li v-for="item in playerInstructionList" :key="item">{{ item }}</li>
+                        </ul>
+                      </div>
                     </div>
-                    <div class="rounded-[24px] border border-cyan-300/15 bg-cyan-400/[0.06] px-4 py-4">
-                      <p class="text-[11px] uppercase tracking-[0.24em] text-cyan-100/70">What to do now</p>
-                      <ul class="mt-3 space-y-2 text-sm leading-6 text-slate-200">
-                        <li v-for="item in playerInstructionList" :key="item">{{ item }}</li>
-                      </ul>
+
+                    <div v-else class="space-y-4">
+                      <div class="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                          <p class="text-[11px] uppercase tracking-[0.24em] text-slate-500">Your cards</p>
+                          <p class="mt-2 text-sm leading-6 text-slate-300">Review your private role cards here before choosing what to show to the table.</p>
+                        </div>
+                        <UiBadge tone="muted">{{ selfPlayer?.isAdjudicator ? 'Judge view' : 'Private view' }}</UiBadge>
+                      </div>
+
+                      <div v-if="!selfPlayer?.isAdjudicator" class="grid gap-3 sm:grid-cols-2">
+                        <div v-for="card in selfCards" :key="`${card.id}-center-panel`" class="rounded-[22px] border border-white/10 bg-white/[0.03] px-4 py-4">
+                          <div class="flex items-center justify-center">
+                            <Card
+                              :title="card.title"
+                              :subtitle="card.subtitle"
+                              :tone="card.tone"
+                              :is-flipped="true"
+                              :is-wild="card.isWild"
+                              size="sm"
+                              :badge-label="card.badgeLabel || 'Knowem'"
+                              :back-label="card.backLabel || 'Hidden card'"
+                            />
+                          </div>
+                          <p class="mt-3 text-center text-xs uppercase tracking-[0.22em] text-slate-400">{{ card.cardType === 'wild' ? 'Wild modifier' : 'Primary role' }}</p>
+                        </div>
+                      </div>
+
+                      <div v-else class="rounded-[20px] border border-dashed border-white/10 px-4 py-8 text-center text-sm leading-6 text-slate-400">
+                        Judges do not carry a private truth or wild card this round. Stay on the instruction view to track what to read and when to lock the verdict.
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -189,8 +236,8 @@
       </div>
     </UiPanel>
 
-    <div class="grid gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
-      <UiPanel padding="lg">
+    <div class="grid gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+      <UiPanel padding="lg" class="xl:order-2">
         <div class="flex items-center justify-between gap-3">
           <div>
             <UiBadge tone="accent">Actions</UiBadge>
@@ -260,7 +307,7 @@
         </div>
       </UiPanel>
 
-      <UiPanel padding="lg">
+      <UiPanel padding="lg" class="xl:order-1">
         <div class="flex items-center justify-between gap-3">
           <div>
             <UiBadge tone="accent">Your hand</UiBadge>
@@ -271,12 +318,6 @@
 
         <div class="mt-6 overflow-hidden rounded-[28px] border border-white/10 bg-[rgba(8,12,22,0.42)] px-3 py-5 sm:px-5 sm:py-5">
           <div class="relative overflow-hidden rounded-[24px] border border-white/10 bg-[radial-gradient(circle_at_center,rgba(8,145,178,0.12),rgba(8,12,22,0)_38%)] px-2 py-5 sm:px-4">
-            <div class="pointer-events-none absolute inset-y-5 left-1/2 hidden w-[148px] -translate-x-1/2 rounded-[22px] border border-dashed border-cyan-300/20 bg-cyan-400/[0.05] lg:block" />
-            <div class="pointer-events-none absolute left-1/2 top-7 hidden -translate-x-1/2 text-center lg:block">
-              <p class="text-[11px] uppercase tracking-[0.24em] text-cyan-100/70">Center show lane</p>
-              <p class="mt-2 max-w-[150px] text-xs leading-5 text-slate-400">Keep this lane open. Flip a card, then send it cleanly to the middle table.</p>
-            </div>
-
             <PlayerHand
               :cards="selfCards"
               :empty-label="selfPlayer?.isAdjudicator ? 'Adjudicator' : 'Waiting for deal'"
@@ -293,7 +334,7 @@
         <div v-if="selectedCardType" class="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-[22px] border px-4 py-3 text-sm transition duration-300" :class="playPromptClass">
           <p>{{ playPromptText }}</p>
           <UiButton variant="secondary" class="!border-amber-200/30 !text-amber-50" :disabled="!canPlaySelectedCard" @click="playSelectedCard">
-            {{ playIntentLocked ? 'Sending…' : 'Play card to center' }}
+            {{ playIntentLocked ? 'Showing…' : 'Show to table' }}
           </UiButton>
         </div>
         <p class="mt-5 text-sm text-slate-400">{{ statusLine }}</p>
@@ -388,6 +429,7 @@ const emit = defineEmits<{
 const draftAnswer = ref('')
 const showResults = ref(true)
 const guesses = reactive<Record<string, 'truth' | 'false'>>({})
+const centerPanelView = ref<'instructions' | 'cards'>('instructions')
 const selectedCardType = ref<PlayedCardType | null>(null)
 const pendingPlayCardType = ref<PlayedCardType | null>(null)
 const playIntentAt = ref(0)
@@ -538,27 +580,6 @@ const centerStageHint = computed(() => {
     return 'Your turn is locked in. The next center reveal will land here for the whole room.'
   }
   return 'Flip a card in your hand below when you want to reveal it. The center stage keeps one clear, readable reveal at a time.'
-})
-const centerTempoLine = computed(() => {
-  if (stageCardIsPending.value) {
-    return 'Gameplay reads better when the hand commits first, then the center lane pays off a beat later. This short delay gives the reveal real intent.'
-  }
-  if (playedCard.value?.isWild) {
-    return 'Wild reveals should feel louder than base cards: a faster lift, brighter glow, and a short settle make the rule shift obvious.'
-  }
-  if (playedCard.value) {
-    return 'Primary card reveals read best with one clean entrance, a brief hold, and no competing cards in the same focal lane.'
-  }
-  return 'Use the middle as a single spotlight lane: deal out, reveal once, hold the state for a beat, then return attention to the hand and answers.'
-})
-const centerTempoClass = computed(() => {
-  if (stageCardIsPending.value) {
-    return 'border-cyan-300/20 bg-cyan-400/10 shadow-[0_18px_44px_rgba(34,211,238,0.12)]'
-  }
-  if (playedCard.value?.isWild) {
-    return 'border-amber-300/25 bg-amber-400/10 shadow-[0_18px_44px_rgba(251,191,36,0.12)]'
-  }
-  return ''
 })
 const playerInstructionList = computed(() => {
   if (selfPlayer.value?.isAdjudicator) {
@@ -739,6 +760,7 @@ function handleSelfCardClick(card: HandCardItem & { isFlipped: boolean }) {
     return
   }
 
+  centerPanelView.value = 'cards'
   selectedCardType.value = card.isFlipped && card.cardType ? card.cardType : null
 }
 
