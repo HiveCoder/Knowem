@@ -19,29 +19,30 @@
         </div>
 
         <div class="mt-6 grid gap-3 sm:grid-cols-3">
-          <div class="rounded-[24px] border border-white/10 bg-white/[0.04] p-4">
+          <div class="result-stat-card rounded-[24px] border border-white/10 bg-white/[0.04] p-4" style="--result-delay: 0ms">
             <p class="text-[11px] uppercase tracking-[0.24em] text-slate-500">Judge reads</p>
             <p class="mt-3 text-3xl font-semibold text-white">{{ correctCalls }}</p>
             <p class="mt-2 text-sm text-slate-400">correct calls this round</p>
           </div>
-          <div class="rounded-[24px] border border-white/10 bg-white/[0.04] p-4">
+          <div class="result-stat-card rounded-[24px] border border-white/10 bg-white/[0.04] p-4" style="--result-delay: 70ms">
             <p class="text-[11px] uppercase tracking-[0.24em] text-slate-500">Bluff escapes</p>
             <p class="mt-3 text-3xl font-semibold text-white">{{ deceptiveWins }}</p>
             <p class="mt-2 text-sm text-slate-400">lies that slipped past the verdict</p>
           </div>
-          <div class="rounded-[24px] border border-white/10 bg-white/[0.04] p-4">
+          <div class="result-stat-card rounded-[24px] border border-white/10 bg-white/[0.04] p-4" style="--result-delay: 140ms">
             <p class="text-[11px] uppercase tracking-[0.24em] text-slate-500">Round swing</p>
             <p class="mt-3 text-3xl font-semibold text-white">{{ totalPointsAwarded }}</p>
             <p class="mt-2 text-sm text-slate-400">points distributed across the table</p>
           </div>
         </div>
 
-        <div class="mt-6 grid gap-3">
+        <transition-group name="result-card" tag="div" class="mt-6 grid gap-3">
           <article
-            v-for="result in orderedResults"
+            v-for="(result, index) in orderedResults"
             :key="result.playerId"
-            class="rounded-[28px] border px-5 py-5 transition"
+            class="result-card rounded-[28px] border px-5 py-5 transition"
             :class="resultCardClass(result)"
+            :style="{ '--result-delay': `${220 + index * 80}ms` }"
           >
             <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div class="min-w-0">
@@ -74,9 +75,9 @@
               </div>
             </div>
           </article>
-        </div>
+        </transition-group>
 
-        <div class="mt-6 flex flex-col gap-3 rounded-[28px] border border-white/10 bg-[rgba(8,12,22,0.5)] p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div class="result-footer mt-6 flex flex-col gap-3 rounded-[28px] border border-white/10 bg-[rgba(8,12,22,0.5)] p-4 sm:flex-row sm:items-center sm:justify-between" style="--result-delay: 320ms">
           <div>
             <p class="text-sm font-medium text-white">{{ canAdvance ? 'Host can continue when ready.' : 'Waiting for the host to deal the next round.' }}</p>
             <p class="mt-1 text-sm text-slate-400">Close this recap if you want the table visible while scores settle.</p>
@@ -84,7 +85,7 @@
           <button
             class="action-button w-full bg-cyan-400 text-slate-950 hover:bg-cyan-300 sm:w-auto sm:min-w-48"
             :disabled="!canAdvance"
-            @click="$emit('nextRound')"
+            @click="handleNextRound"
           >
             Next round
           </button>
@@ -95,8 +96,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import type { RoundResult } from '@/types/game'
+import { emitSound } from '@/utils/sound'
 
 const props = defineProps<{
   open: boolean
@@ -104,7 +106,7 @@ const props = defineProps<{
   canAdvance: boolean
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   close: []
   nextRound: []
 }>()
@@ -121,6 +123,15 @@ const correctCalls = computed(() => props.results.filter((result) => result.gues
 const deceptiveWins = computed(() => props.results.filter((result) => result.actualRole === 'false' && result.guessedRole !== result.actualRole).length)
 const totalPointsAwarded = computed(() =>
   props.results.reduce((total, result) => total + result.awardedToAdjudicator + result.awardedToPlayer, 0),
+)
+
+watch(
+  () => props.open,
+  (open, wasOpen) => {
+    if (open && !wasOpen) {
+      emitSound('results-open')
+    }
+  },
 )
 
 function roleLabel(role: RoundResult['actualRole']) {
@@ -157,16 +168,54 @@ function resultCardClass(result: RoundResult) {
   }
   return 'border-cyan-400/20 bg-cyan-400/[0.08]'
 }
+
+function handleNextRound() {
+  emitSound('next-round')
+  emit('nextRound')
+}
 </script>
 
 <style scoped>
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.18s ease;
+  transition: opacity 240ms ease, backdrop-filter 300ms ease;
 }
 
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+.result-stat-card,
+.result-card,
+.result-footer {
+  animation: result-rise 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--result-delay, 0ms);
+}
+
+.result-card-enter-active,
+.result-card-leave-active {
+  transition: opacity 300ms ease, transform 420ms cubic-bezier(0.22, 1, 0.36, 1), filter 260ms ease;
+}
+
+.result-card-enter-from,
+.result-card-leave-to {
+  opacity: 0;
+  transform: translateY(18px) scale(0.98);
+  filter: blur(6px);
+}
+
+@keyframes result-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(22px) scale(0.98);
+    filter: blur(8px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
 }
 </style>

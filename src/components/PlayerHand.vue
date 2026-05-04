@@ -9,8 +9,8 @@
         v-for="(card, index) in cards"
         :key="card.id"
         class="relative shrink-0 will-change-transform transition duration-200"
-        :class="card.playable ? 'cursor-pointer touch-manipulation' : ''"
-        :style="cardStyle(index, hoveredIndex === index)"
+        :class="card.playable && !interactionLocked ? 'cursor-pointer touch-manipulation' : ''"
+        :style="cardStyle(card, index, hoveredIndex === index)"
         @mouseenter="hoveredIndex = index"
         @mouseleave="hoveredIndex = null"
         @click="handleCardClick(card)"
@@ -22,12 +22,13 @@
           :is-flipped="resolveFlipped(card)"
           :is-wild="card.isWild"
           :is-played="card.isPlayed"
-          :selected="hoveredIndex === index"
+          :selected="isCardSelected(card, index)"
+          :pending="isPendingCard(card)"
           :flip-key="flipKey"
           :size="compact ? 'sm' : 'md'"
           :back-label="card.backLabel || 'Hidden card'"
           :badge-label="card.badgeLabel || 'Knowem'"
-          :interactive="card.playable"
+          :interactive="card.playable && !interactionLocked"
           :play-animation-key="card.playAnimationKey"
         />
       </div>
@@ -62,11 +63,17 @@ const props = withDefaults(
     compact?: boolean
     emptyLabel?: string
     flipKey?: string | number
+    selectedCardType?: PlayedCardType | null
+    pendingCardType?: PlayedCardType | null
+    interactionLocked?: boolean
   }>(),
   {
     compact: false,
     emptyLabel: 'No cards',
     flipKey: '',
+    selectedCardType: null,
+    pendingCardType: null,
+    interactionLocked: false,
   },
 )
 
@@ -90,17 +97,27 @@ const handClass = computed(() =>
   props.compact ? 'flex-wrap justify-center gap-2 sm:gap-2.5' : 'flex-wrap justify-center gap-3 sm:gap-3.5',
 )
 
-function cardStyle(index: number, hovered: boolean) {
+function isPendingCard(card: HandCardItem) {
+  return Boolean(props.pendingCardType && card.cardType === props.pendingCardType)
+}
+
+function isCardSelected(card: HandCardItem, index: number) {
+  return hoveredIndex.value === index || Boolean(props.selectedCardType && card.cardType === props.selectedCardType)
+}
+
+function cardStyle(card: HandCardItem, index: number, hovered: boolean) {
   const centerOffset = index - (props.cards.length - 1) / 2
   const baseLift = props.compact ? 0 : Math.abs(centerOffset) * 2.2
   const baseRotate = props.compact ? 0 : centerOffset * 2.8
-  const lift = hovered ? baseLift - 8 : baseLift * -1
-  const rotate = hovered ? baseRotate * 0.45 : baseRotate
-  const scale = hovered ? 1.035 : 1
+  const selected = isCardSelected(card, index)
+  const pending = isPendingCard(card)
+  const lift = pending ? -18 : selected ? baseLift - 11 : baseLift * -1
+  const rotate = pending ? baseRotate * 0.18 : selected ? baseRotate * 0.32 : baseRotate
+  const scale = pending ? 1.055 : selected ? 1.04 : 1
 
   return {
     transform: `translateY(${lift}px) rotate(${rotate}deg) scale(${scale})`,
-    zIndex: hovered ? props.cards.length + 2 : index + 1,
+    zIndex: pending ? props.cards.length + 3 : selected ? props.cards.length + 2 : index + 1,
   }
 }
 
@@ -109,7 +126,7 @@ function resolveFlipped(card: HandCardItem) {
 }
 
 function handleCardClick(card: HandCardItem) {
-  if (!card.playable) {
+  if (!card.playable || props.interactionLocked) {
     return
   }
 

@@ -16,9 +16,28 @@
 </template>
 
 <script setup lang="ts">
+import { onBeforeUnmount, onMounted } from 'vue'
 import { RouterView } from 'vue-router'
 import { useGameStore } from '@/stores/game'
 import UiButton from '@/components/ui/UiButton.vue'
+import { playSoundCue, type SoundCue } from '@/utils/sound'
 
 const game = useGameStore()
+
+function handleSoundEvent(event: Event) {
+  const cue = (event as CustomEvent<{ name?: SoundCue }>).detail?.name
+  if (!cue) {
+    return
+  }
+
+  void playSoundCue(cue)
+}
+
+onMounted(() => {
+  window.addEventListener('knowem:sound', handleSoundEvent as EventListener)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('knowem:sound', handleSoundEvent as EventListener)
+})
 </script>

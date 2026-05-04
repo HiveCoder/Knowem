@@ -8,6 +8,7 @@
       imageMode ? 'card-shell-image' : '',
       interactive ? 'card-shell-interactive' : '',
       isPlayed ? 'card-shell-played' : '',
+      pending ? 'card-shell-pending' : '',
       showWildBadge ? 'card-shell-wild' : '',
     ]"
     :style="shellStyle"
@@ -93,6 +94,7 @@ const props = withDefaults(
     backLabel?: string
     badgeLabel?: string
     selected?: boolean
+    pending?: boolean
   }>(),
   {
     tone: 'neutral',
@@ -107,6 +109,7 @@ const props = withDefaults(
     backLabel: 'Hidden card',
     badgeLabel: 'Knowem',
     selected: false,
+    pending: false,
   },
 )
 
@@ -284,10 +287,10 @@ async function animatePlayedState() {
         filter: 'drop-shadow(0 8px 18px rgba(0,0,0,0.18))',
       },
       {
-        y: -10,
-        scale: props.isWild ? 1.12 : 1.04,
+        y: props.isWild ? -16 : -10,
+        scale: props.isWild ? 1.16 : 1.045,
         opacity: 1,
-        duration: 0.26,
+        duration: props.isWild ? 0.22 : 0.26,
         ease: 'power3.out',
       },
     )
@@ -295,18 +298,18 @@ async function animatePlayedState() {
       innerRef.value,
       {
         rotateY: 180,
-        duration: 0.52,
+        duration: props.isWild ? 0.48 : 0.52,
         ease: 'power2.inOut',
       },
-      0.08,
+      props.isWild ? 0.04 : 0.08,
     )
     .to(
       shellRef.value,
       {
         y: 0,
         scale: 1,
-        duration: 0.3,
-        ease: 'bounce.out',
+        duration: props.isWild ? 0.34 : 0.3,
+        ease: props.isWild ? 'elastic.out(1, 0.56)' : 'bounce.out',
       },
       props.isWild ? '>-0.02' : '>-=0.02',
     )
@@ -316,24 +319,63 @@ async function animatePlayedState() {
       .to(
         shellRef.value,
         {
-          boxShadow: '0 0 0 1px rgba(251,191,36,0.55), 0 0 24px rgba(251,191,36,0.45), 0 18px 38px rgba(15,23,42,0.46)',
-          duration: 0.2,
+          boxShadow: '0 0 0 1px rgba(251,191,36,0.65), 0 0 36px rgba(251,191,36,0.55), 0 24px 46px rgba(15,23,42,0.52)',
+          duration: 0.18,
           ease: 'power1.out',
         },
-        0.12,
+        0.08,
       )
       .to(
         shellRef.value,
         {
-          boxShadow: '0 0 0 1px rgba(251,191,36,0.28), 0 0 12px rgba(251,191,36,0.28), 0 16px 34px rgba(15,23,42,0.34)',
-          repeat: 1,
+          boxShadow: '0 0 0 1px rgba(251,191,36,0.3), 0 0 16px rgba(251,191,36,0.3), 0 18px 36px rgba(15,23,42,0.36)',
+          repeat: 2,
           yoyo: true,
-          duration: 0.24,
+          duration: 0.22,
           ease: 'sine.inOut',
         },
-        0.34,
+        0.28,
       )
   }
+}
+
+async function animatePendingState() {
+  await nextTick()
+  if (!shellRef.value || props.isPlayed) {
+    return
+  }
+
+  gsap.killTweensOf(shellRef.value)
+
+  if (props.pending) {
+    gsap.timeline()
+      .to(shellRef.value, {
+        y: -14,
+        scale: props.isWild ? 1.08 : 1.05,
+        rotate: props.isWild ? -2.2 : -1.2,
+        duration: 0.18,
+        ease: 'power2.out',
+        force3D: true,
+      })
+      .to(shellRef.value, {
+        y: -10,
+        scale: props.isWild ? 1.06 : 1.03,
+        rotate: 0,
+        duration: 0.2,
+        ease: 'sine.out',
+        force3D: true,
+      })
+    return
+  }
+
+  gsap.to(shellRef.value, {
+    y: 0,
+    scale: 1,
+    rotate: 0,
+    duration: 0.22,
+    ease: 'power2.out',
+    force3D: true,
+  })
 }
 
 function handlePointerMove(event: PointerEvent) {
@@ -366,6 +408,7 @@ function handleActivate() {
 
 watch(() => [resolvedFlipped.value, props.flipKey], animateFlip)
 watch(() => [props.isPlayed, props.playAnimationKey], animatePlayedState)
+watch(() => props.pending, animatePendingState)
 
 onMounted(() => {
   if (innerRef.value) {
@@ -405,6 +448,10 @@ onMounted(() => {
 
 .card-shell-played {
   filter: drop-shadow(0 22px 42px rgba(2, 6, 23, 0.38));
+}
+
+.card-shell-pending {
+  filter: drop-shadow(0 20px 38px rgba(56, 189, 248, 0.24));
 }
 
 .card-shell-wild {

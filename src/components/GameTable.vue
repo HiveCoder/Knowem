@@ -78,33 +78,51 @@
               <div class="relative mx-auto w-full max-w-[580px] overflow-hidden rounded-[28px] border border-white/10 bg-[rgba(8,12,22,0.34)] px-4 py-5 backdrop-blur-md sm:px-5 sm:py-5">
                 <Deck :round="room.game.round" :trigger-key="lastDealtAt || room.game.round" :seats="deckTargets" />
 
-                <div class="relative z-10 flex min-h-[250px] flex-col items-center justify-center gap-4 sm:min-h-[280px]">
-                  <transition name="table-play">
-                    <div v-if="playedCard" :key="playedCard.id" class="pointer-events-none absolute inset-x-0 top-4 flex justify-center px-4">
-                      <div class="flex flex-col items-center gap-2 rounded-[28px] border border-white/10 bg-[rgba(10,14,26,0.56)] px-3 py-3 backdrop-blur-md shadow-[0_24px_60px_rgba(2,6,23,0.32)] sm:px-4">
-                        <Card
-                          :title="playedCard.title"
-                          :subtitle="playedCard.subtitle"
-                          :tone="playedCard.tone"
-                          :is-flipped="true"
-                          :is-wild="playedCard.isWild"
-                          :is-played="true"
-                          :play-animation-key="playedCardAnimationKey"
-                          size="md"
-                          badge-label="Played"
-                          back-label="Played card"
-                        />
-                        <p class="text-center text-[11px] uppercase tracking-[0.24em] text-slate-300">
-                          {{ playedCard.username }} played {{ playedCard.isWild ? 'a wild card' : 'to center table' }}
-                        </p>
+                <div class="relative z-10 flex min-h-[300px] flex-col items-center justify-center gap-4 sm:min-h-[340px]">
+                  <div class="flex min-h-[218px] w-full items-center justify-center rounded-[24px] border border-dashed border-white/10 bg-[radial-gradient(circle_at_top,rgba(148,163,184,0.08),rgba(15,23,42,0.18)_60%,rgba(2,6,23,0.4))] px-4 py-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] sm:min-h-[238px]">
+                    <transition name="table-play" mode="out-in">
+                      <div v-if="stageCard" :key="stageCardKey" class="pointer-events-none flex justify-center px-2">
+                        <div
+                          class="flex flex-col items-center gap-2 rounded-[28px] border px-3 py-3 backdrop-blur-md shadow-[0_24px_60px_rgba(2,6,23,0.32)] sm:px-4"
+                          :class="stageCardShellClass"
+                        >
+                          <UiBadge :tone="stageCardBadgeTone">{{ stageCardBadgeLabel }}</UiBadge>
+                          <Card
+                            :title="stageCard.title"
+                            :subtitle="stageCard.subtitle"
+                            :tone="stageCard.tone"
+                            :is-flipped="true"
+                            :is-wild="stageCard.isWild"
+                            :is-played="!stageCardIsPending"
+                            :pending="stageCardIsPending"
+                            :play-animation-key="stageCardAnimationKey"
+                            size="md"
+                            badge-label="Played"
+                            back-label="Played card"
+                          />
+                          <p class="text-center text-[11px] uppercase tracking-[0.24em] text-slate-300">
+                            {{ stageCardCaption }}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  </transition>
 
-                  <UiBadge tone="muted">Active cards</UiBadge>
+                      <div v-else key="empty-stage" class="flex max-w-sm flex-col items-center gap-3 text-center">
+                        <UiBadge tone="muted">Center reveal</UiBadge>
+                        <p class="text-base font-medium text-white">The table spotlight is clear.</p>
+                        <p class="text-sm leading-6 text-slate-400">{{ centerStageHint }}</p>
+                      </div>
+                    </transition>
+                  </div>
 
-                  <div class="w-full overflow-hidden rounded-[24px] border border-white/10 bg-slate-950/45 px-3 py-5 shadow-[0_18px_40px_rgba(2,6,23,0.16)] sm:px-4">
-                    <PlayerHand :cards="focusCards" :empty-label="selfPlayer?.isAdjudicator ? 'Adjudicator' : 'Waiting for deal'" :flip-key="room.game.round" />
+                  <div class="flex flex-wrap items-center justify-center gap-2">
+                    <UiBadge tone="muted">Play surface</UiBadge>
+                    <UiBadge v-if="selectedCardType && !stageCardIsPending" tone="accent">{{ selectedCardLabel }} selected</UiBadge>
+                    <UiBadge v-if="stageCardIsPending" tone="accent">sending to table</UiBadge>
+                  </div>
+
+                  <div class="w-full rounded-[24px] border border-white/10 bg-slate-950/45 px-4 py-4 text-center shadow-[0_18px_40px_rgba(2,6,23,0.16)] transition duration-300" :class="centerTempoClass">
+                    <p class="text-[11px] uppercase tracking-[0.24em] text-slate-500">Table tempo</p>
+                    <p class="mt-3 text-sm leading-6 text-slate-300">{{ centerTempoLine }}</p>
                   </div>
                 </div>
               </div>
@@ -229,12 +247,17 @@
             :cards="selfCards"
             :empty-label="selfPlayer?.isAdjudicator ? 'Adjudicator' : 'Waiting for deal'"
             :flip-key="room.game.round"
+            :selected-card-type="selectedCardType"
+            :pending-card-type="pendingPlayCardType"
+            :interaction-locked="playIntentLocked"
             @card-click="handleSelfCardClick"
           />
         </div>
-        <div v-if="canPlaySelectedCard" class="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-[22px] border border-amber-400/20 bg-amber-400/10 px-4 py-3 text-sm text-amber-100">
-          <p>Selected {{ selectedCardLabel }}. Play it to the center table for everyone to see.</p>
-          <UiButton variant="secondary" class="!border-amber-200/30 !text-amber-50" @click="playSelectedCard">Play card to center</UiButton>
+        <div v-if="selectedCardType" class="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-[22px] border px-4 py-3 text-sm transition duration-300" :class="playPromptClass">
+          <p>{{ playPromptText }}</p>
+          <UiButton variant="secondary" class="!border-amber-200/30 !text-amber-50" :disabled="!canPlaySelectedCard" @click="playSelectedCard">
+            {{ playIntentLocked ? 'Sending…' : 'Play card to center' }}
+          </UiButton>
         </div>
         <p class="mt-5 text-sm text-slate-400">{{ statusLine }}</p>
       </UiPanel>
@@ -254,6 +277,7 @@ import UiBadge from '@/components/ui/UiBadge.vue'
 import UiButton from '@/components/ui/UiButton.vue'
 import UiPanel from '@/components/ui/UiPanel.vue'
 import type { PlayedCardType, PrivateState, RoomState } from '@/types/game'
+import { emitSound } from '@/utils/sound'
 
 const WILD_CARD_DETAILS = {
   forced_truth: {
@@ -328,6 +352,14 @@ const draftAnswer = ref('')
 const showResults = ref(true)
 const guesses = reactive<Record<string, 'truth' | 'false'>>({})
 const selectedCardType = ref<PlayedCardType | null>(null)
+const pendingPlayCardType = ref<PlayedCardType | null>(null)
+const playIntentAt = ref(0)
+const playIntentLocked = ref(false)
+
+let playIntentTimeout: ReturnType<typeof window.setTimeout> | null = null
+let playIntentFallbackTimeout: ReturnType<typeof window.setTimeout> | null = null
+const PLAY_REVEAL_LEAD_MS = 150
+const PLAY_REVEAL_FAILSAFE_MS = 1800
 
 const focusSeatPresets = [
   { left: 50, top: 14 },
@@ -344,6 +376,7 @@ watch(
     draftAnswer.value = ''
     showResults.value = true
     selectedCardType.value = null
+    clearPlayIntentState()
     for (const key of Object.keys(guesses)) {
       delete guesses[key]
     }
@@ -371,6 +404,43 @@ const canSubmitVotes = computed(() => judgableAnswers.value.length > 0 && judgab
 const phaseLabel = computed(() => props.room.game.phase.replace('_', ' '))
 const playedCard = computed(() => props.room.game.playedCard)
 const playedCardAnimationKey = computed(() => playedCard.value?.playedAt ?? props.lastCardPlayedAt)
+const selectedHandCard = computed(() => selfCards.value.find((card) => card.cardType === selectedCardType.value) ?? null)
+const pendingHandCard = computed(() => selfCards.value.find((card) => card.cardType === pendingPlayCardType.value) ?? null)
+const stageCard = computed(() => {
+  if (pendingHandCard.value) {
+    return {
+      id: `pending-${pendingHandCard.value.id}`,
+      title: pendingHandCard.value.title,
+      subtitle: pendingHandCard.value.subtitle,
+      tone: pendingHandCard.value.tone,
+      isWild: Boolean(pendingHandCard.value.isWild),
+      username: selfPlayer.value?.username ?? 'You',
+    }
+  }
+
+  return playedCard.value
+})
+const stageCardIsPending = computed(() => Boolean(pendingHandCard.value))
+const stageCardKey = computed(() => (stageCardIsPending.value ? `pending-${playIntentAt.value}` : stageCard.value?.id ?? 'empty-stage'))
+const stageCardAnimationKey = computed(() => (stageCardIsPending.value ? playIntentAt.value : playedCardAnimationKey.value))
+const stageCardBadgeTone = computed(() => (stageCardIsPending.value ? 'muted' : 'accent'))
+const stageCardBadgeLabel = computed(() => (stageCardIsPending.value ? 'Incoming reveal' : 'Latest reveal'))
+const stageCardShellClass = computed(() =>
+  stageCard.value?.isWild
+    ? 'border-amber-300/35 bg-[rgba(33,20,6,0.68)] shadow-[0_30px_80px_rgba(120,53,15,0.34)]'
+    : 'border-white/10 bg-[rgba(10,14,26,0.68)]',
+)
+const stageCardCaption = computed(() => {
+  if (!stageCard.value) {
+    return ''
+  }
+
+  if (stageCardIsPending.value) {
+    return `${stageCard.value.username} is sending ${stageCard.value.isWild ? 'a wild card' : 'a center-table reveal'}...`
+  }
+
+  return `${stageCard.value.username} played ${stageCard.value.isWild ? 'a wild card' : 'to center table'}`
+})
 const phaseTitle = computed(() => {
   if (props.room.game.phase === 'question_reveal') {
     return 'Question is live. Time to shape the story.'
@@ -389,6 +459,9 @@ const phaseTitle = computed(() => {
 const statusLine = computed(() => {
   if (props.room.game.phase === 'results') {
     return 'Round scoring is settled. Review the recap, watch the standings shift, and get ready for the next question.'
+  }
+  if (playIntentLocked.value) {
+    return 'Card committed. Give the table a beat to read the reveal before the next action.'
   }
   if (selfPlayer.value?.hasAnswered) {
     return 'Your answer is locked. Watch the table and prepare for the verdict.'
@@ -411,24 +484,75 @@ const sideSeats = computed(() => {
 const leftSeats = computed(() => sideSeats.value.filter((_seat, index) => index % 2 === 0))
 const rightSeats = computed(() => sideSeats.value.filter((_seat, index) => index % 2 === 1))
 const selfCards = computed<HandCardItem[]>(() => handCardsForPlayer(selfPlayer.value ?? null, true))
-const focusCards = computed<HandCardItem[]>(() => {
+const selectedCardLabel = computed(() => (selectedCardType.value === 'wild' ? 'wild card' : 'primary card'))
+const canPlaySelectedCard = computed(() => Boolean(selectedCardType.value && canAnswer.value && !selfPlayer.value?.hasAnswered && !playIntentLocked.value))
+const centerStageHint = computed(() => {
   if (selfPlayer.value?.isAdjudicator) {
-    return [
-      {
-        id: 'judge-focus',
-        title: 'Adjudicator',
-        subtitle: 'Read the room and catch the bluff',
-        tone: 'neutral',
-        revealed: true,
-        badgeLabel: 'Judge',
-      },
-    ]
+    return 'Contestants can throw a card into this lane. Keep the spotlight clean so every reveal reads instantly.'
+  }
+  if (stageCardIsPending.value && pendingHandCard.value) {
+    return `The ${pendingHandCard.value.isWild ? 'wild' : 'primary'} reveal is crossing from hand to center. Keep the table clear so the landing reads cleanly.`
+  }
+  if (canPlaySelectedCard.value) {
+    return `Your ${selectedCardLabel.value} is ready. Play it from your hand below to put it on the table.`
+  }
+  if (selfPlayer.value?.hasAnswered) {
+    return 'Your turn is locked in. The next center reveal will land here for the whole room.'
+  }
+  return 'Flip a card in your hand below when you want to reveal it. The center stage keeps one clear, readable reveal at a time.'
+})
+const centerTempoLine = computed(() => {
+  if (stageCardIsPending.value) {
+    return 'Gameplay reads better when the hand commits first, then the center lane pays off a beat later. This short delay gives the reveal real intent.'
+  }
+  if (playedCard.value?.isWild) {
+    return 'Wild reveals should feel louder than base cards: a faster lift, brighter glow, and a short settle make the rule shift obvious.'
+  }
+  if (playedCard.value) {
+    return 'Primary card reveals read best with one clean entrance, a brief hold, and no competing cards in the same focal lane.'
+  }
+  return 'Use the middle as a single spotlight lane: deal out, reveal once, hold the state for a beat, then return attention to the hand and answers.'
+})
+const centerTempoClass = computed(() => {
+  if (stageCardIsPending.value) {
+    return 'border-cyan-300/20 bg-cyan-400/10 shadow-[0_18px_44px_rgba(34,211,238,0.12)]'
+  }
+  if (playedCard.value?.isWild) {
+    return 'border-amber-300/25 bg-amber-400/10 shadow-[0_18px_44px_rgba(251,191,36,0.12)]'
+  }
+  return ''
+})
+const playPromptClass = computed(() =>
+  playIntentLocked.value
+    ? 'border-cyan-300/25 bg-cyan-400/10 text-cyan-50'
+    : selectedCardType.value === 'wild'
+      ? 'border-amber-400/25 bg-amber-400/10 text-amber-100'
+      : 'border-sky-400/25 bg-sky-400/10 text-sky-50',
+)
+const playPromptText = computed(() => {
+  if (playIntentLocked.value) {
+    return `Sending ${pendingPlayCardType.value === 'wild' ? 'wild card' : 'primary card'} to the center table.`
   }
 
-  return selfCards.value
+  if (!selectedHandCard.value) {
+    return 'Choose a card to reveal it to the table.'
+  }
+
+  return `Selected ${selectedCardLabel.value}. Commit the hand first, then let the center reveal land a beat later.`
 })
-const canPlaySelectedCard = computed(() => Boolean(selectedCardType.value && canAnswer.value && !selfPlayer.value?.hasAnswered))
-const selectedCardLabel = computed(() => (selectedCardType.value === 'wild' ? 'wild card' : 'primary card'))
+
+watch(
+  () => playedCard.value?.playedAt,
+  (playedAt) => {
+    if (!playedAt) {
+      return
+    }
+
+    clearPlayIntentState()
+    selectedCardType.value = null
+    emitSound(playedCard.value?.isWild ? 'wild-reveal' : 'card-reveal')
+  },
+)
 
 const deckTargets = computed(() =>
   topPlayers.value
@@ -558,14 +682,49 @@ function submitOwnAnswer() {
 }
 
 function handleSelfCardClick(card: HandCardItem & { isFlipped: boolean }) {
+  if (playIntentLocked.value) {
+    return
+  }
+
   selectedCardType.value = card.isFlipped && card.cardType ? card.cardType : null
 }
 
 function playSelectedCard() {
-  if (!selectedCardType.value) {
+  if (!selectedCardType.value || playIntentLocked.value) {
     return
   }
-  emit('playCard', selectedCardType.value)
+
+  const cardType = selectedCardType.value
+  clearPlayIntentTimers()
+  pendingPlayCardType.value = cardType
+  playIntentLocked.value = true
+  playIntentAt.value = Date.now()
+  emitSound('card-commit')
+
+  playIntentTimeout = window.setTimeout(() => {
+    emit('playCard', cardType)
+    playIntentFallbackTimeout = window.setTimeout(() => {
+      clearPlayIntentState()
+    }, PLAY_REVEAL_FAILSAFE_MS)
+  }, PLAY_REVEAL_LEAD_MS)
+}
+
+function clearPlayIntentTimers() {
+  if (playIntentTimeout) {
+    window.clearTimeout(playIntentTimeout)
+    playIntentTimeout = null
+  }
+
+  if (playIntentFallbackTimeout) {
+    window.clearTimeout(playIntentFallbackTimeout)
+    playIntentFallbackTimeout = null
+  }
+}
+
+function clearPlayIntentState() {
+  clearPlayIntentTimers()
+  pendingPlayCardType.value = null
+  playIntentLocked.value = false
 }
 
 function describeWildCard(wildCard: PrivateState['wildCard']) {
@@ -595,12 +754,13 @@ function dismissResults() {
 <style scoped>
 .table-play-enter-active,
 .table-play-leave-active {
-  transition: opacity 260ms ease, transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: opacity 240ms ease, transform 520ms cubic-bezier(0.22, 1, 0.36, 1), filter 360ms ease;
 }
 
 .table-play-enter-from,
 .table-play-leave-to {
   opacity: 0;
-  transform: translateY(56px) scale(0.84);
+  transform: translateY(42px) scale(0.88);
+  filter: blur(8px);
 }
 </style>

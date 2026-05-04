@@ -34,6 +34,7 @@
 import { computed, nextTick, ref, watch } from 'vue'
 import gsap from 'gsap'
 import { deckBackImage } from '@/assets/card-art'
+import { emitSound } from '@/utils/sound'
 
 interface SeatTarget {
   id: string
@@ -100,10 +101,6 @@ function registerAnchorRef(id: string, element: Element | null) {
   }
 }
 
-function emitSound(name: 'shuffle' | 'deal') {
-  window.dispatchEvent(new CustomEvent('knowem:sound', { detail: { name } }))
-}
-
 async function runDealAnimation() {
   if (props.round < 1) {
     return
@@ -117,6 +114,8 @@ async function runDealAnimation() {
 
   const dealerOriginX = 0
   const dealerOriginY = -82
+  const seatOrder = new Map(props.seats.map((seat, index) => [seat.id, index]))
+  const seatCount = Math.max(props.seats.length, 1)
 
   gsap.killTweensOf([...stackRefs.value, ...flightRefs.value])
   gsap.set(stackRefs.value, {
@@ -140,9 +139,10 @@ async function runDealAnimation() {
   const shuffleTimeline = gsap.timeline()
   shuffleTimeline
     .to(stackRefs.value, {
-      y: (_index: number) => gsap.utils.random(-10, 4),
-      rotate: () => gsap.utils.random(-3, 3),
-      duration: 0.18,
+      y: (_index: number) => gsap.utils.random(-12, 6),
+      rotate: () => gsap.utils.random(-4, 4),
+      scale: () => gsap.utils.random(0.985, 1.015),
+      duration: 0.2,
       ease: 'power1.out',
       stagger: 0.02,
     })
@@ -150,8 +150,8 @@ async function runDealAnimation() {
       stackRefs.value,
       {
         keyframes: [
-          { y: () => gsap.utils.random(-14, -6), duration: 0.08 },
-          { y: () => gsap.utils.random(-8, 2), duration: 0.08 },
+          { y: () => gsap.utils.random(-16, -8), rotate: () => gsap.utils.random(-5, 5), duration: 0.08 },
+          { y: () => gsap.utils.random(-10, 1), rotate: () => gsap.utils.random(-3, 3), duration: 0.08 },
         ],
         ease: 'power1.inOut',
         stagger: 0.02,
@@ -162,7 +162,8 @@ async function runDealAnimation() {
       x: 0,
       y: dealerOriginY,
       rotate: 0,
-      duration: 0.22,
+      scale: 1,
+      duration: 0.24,
       ease: 'power2.out',
       stagger: 0.02,
     })
@@ -181,24 +182,36 @@ async function runDealAnimation() {
     const targetX = anchorBounds.left + anchorBounds.width / 2 - (tableBounds.left + tableBounds.width / 2)
     const targetY = anchorBounds.top + anchorBounds.height / 2 - (tableBounds.top + tableBounds.height / 2)
     const seat = props.seats.find((entry) => entry.id === card.seatId)
+    const seatIndex = seatOrder.get(card.seatId) ?? 0
     const totalCards = Math.max(seat?.cardCount ?? 2, 2)
     const seatOffset = (card.cardIndex - (totalCards - 1) / 2) * 18
     const finalX = targetX + seatOffset
-    const midpointX = finalX * 0.34
-    const arcY = targetY - 42 - Math.abs(finalX) * 0.06
+    const midpointX = finalX * 0.38
+    const arcY = targetY - 48 - Math.abs(finalX) * 0.08
+    const cardLapDelay = card.cardIndex * 0.16
+    const seatDelay = seatIndex * 0.045
+    const delay = cardLapDelay + seatDelay
+    const liftScale = card.cardIndex === 0 ? 1.03 : 1.01
+    const landingDuration = 0.18 + card.cardIndex * 0.01
 
     gsap.fromTo(
       element,
-      { opacity: 1, x: dealerOriginX, y: dealerOriginY, rotate: gsap.utils.random(-7, 7), scale: 1 },
+      { opacity: 1, x: dealerOriginX, y: dealerOriginY, rotate: gsap.utils.random(-7, 7), scale: 0.96 },
       {
         keyframes: [
-          { x: midpointX, y: arcY, rotate: gsap.utils.random(-10, 10), duration: 0.12, ease: 'power1.out' },
-          { x: finalX, y: targetY, rotate: gsap.utils.random(-4, 4), duration: 0.16, ease: 'power2.out' },
+          { x: midpointX, y: arcY, rotate: gsap.utils.random(-11, 11), scale: liftScale, duration: 0.11, ease: 'power1.out' },
+          { x: finalX, y: targetY, rotate: gsap.utils.random(-4, 4), scale: 1, duration: landingDuration, ease: 'power2.out' },
+          { y: targetY - 6, duration: 0.06, ease: 'power1.out' },
+          { y: targetY, duration: 0.08, ease: 'power1.in' },
         ],
-        delay: index * 0.085,
-        onStart: () => emitSound('deal'),
+        delay,
+        onStart: () => {
+          if (seatIndex === 0 || seatCount <= 2) {
+            emitSound('deal')
+          }
+        },
         onComplete: () => {
-          gsap.to(element, { opacity: 0, duration: 0.08, delay: 0.03 })
+          gsap.to(element, { opacity: 0, scale: 0.98, duration: 0.1, delay: 0.04 })
         },
       },
     )
